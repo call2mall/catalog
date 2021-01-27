@@ -1,0 +1,13 @@
+{
+  "log": {
+    "level": "info",
+    "stdout": false,
+    "path": "./log",
+    "size": -1,
+    "ttl": 241920
+  },
+  "cache": {
+    "path": "./cache"
+  },
+  "proxies_csv": "proxies.csv"
+}
