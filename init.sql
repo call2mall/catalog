@@ -9,11 +9,11 @@ create unique index if not exists image_hash_uix
 
 create table if not exists category
 (
-    id         serial      not null
+    id   serial      not null
         constraint category_pk
             primary key,
-    name       varchar(64) not null,
-    is_defined bool default false
+    name varchar(64) not null,
+    l8n  text        null
 );
 
 create unique index if not exists category_name_uix

@@ -1,4 +1,4 @@
-package condition
+package dao
 
 import (
 	"strings"
