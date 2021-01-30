@@ -20,5 +20,8 @@ func TestExtractFeaturesByUrl(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(features)
+	fmt.Println(features.Url)
+	fmt.Println(features.Title)
+	fmt.Println(features.PhotoUrl)
+	fmt.Println(features.Category)
 }
