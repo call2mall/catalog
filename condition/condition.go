@@ -1,4 +1,4 @@
-package category
+package condition
 
 import (
 	"strings"
