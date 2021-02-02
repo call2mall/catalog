@@ -1,4 +1,4 @@
-package xlsx
+package parser
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestParser(t *testing.T) {
-	parser, err := NewParser("../docs/wetransfer-49cd36/Amazon Beauty Offer.xlsx")
+	parser, err := NewParser("../docs/210112 Osram LED Leuchtmittel.xlsx")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -16,12 +16,13 @@ func TestParser(t *testing.T) {
 		data    Data
 		headers Headers
 	)
-	data, headers, err = parser.Parse("Packinglist")
+	data, headers, err = parser.Parse("Overview")
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println(headers)
 
-	row := data[0]
-	fmt.Println(row)
+	if len(data) > 0 {
+		fmt.Println(data[0])
+	}
 }

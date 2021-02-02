@@ -24,15 +24,16 @@ create table if not exists sku
     id            bigserial           not null
         constraint sku_pk
             primary key,
+    avides_sku    varchar(64)         not null,
     ean           varchar(64)         not null,
     warehouse_id  varchar(64)         not null,
-    avides_sku    varchar(64)         not null,
+    asin          varchar(64)         not null,
+    origin_url    varchar(256)        not null,
     category_id   int                 not null
         constraint sku_category_fk
             references category
             on update cascade on delete cascade,
     title         text                not null,
-    asin          varchar(64),
     condition     text                not null,
     l8n           text                null,
     quantity      int       default 1 not null,

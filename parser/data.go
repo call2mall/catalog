@@ -1,8 +1,10 @@
-package xlsx
+package parser
 
 import (
 	"errors"
+	"math"
 	"strconv"
+	"strings"
 )
 
 type Cell struct {
@@ -87,6 +89,28 @@ func (c Cell) Float() (f64 float64, err error) {
 	return
 }
 
+func (c Cell) PriceInCent() (ui64 uint64, err error) {
+	if c.value == "" {
+		return
+	}
+
+	withCent := strings.Contains(c.value, ".")
+
+	var f64 float64
+	f64, err = c.Float()
+	if err != nil {
+		return
+	}
+
+	if withCent {
+		f64 *= 100
+	}
+
+	ui64 = uint64(math.Ceil(f64))
+
+	return
+}
+
 func (c Cell) HasImage() (ok bool) {
 	return len(c.bs) > 0
 }
@@ -120,19 +144,40 @@ const (
 	Description Header = "description"
 	Title       Header = "title"
 	Image       Header = "image"
-	Price       Header = "price"
-	PriceNet    Header = "price net"
+	UnitPrice   Header = "unit price"
 	RetailPrice Header = "retail price"
 	EAN         Header = "ean"
-	UnitPrice   Header = "unit price"
 	TotalPrice  Header = "total price"
 	Gender      Header = "gender"
-	LagerId     Header = "lager-id"
+	LagerId     Header = "lager id"
 	Land        Header = "land"
 	Size        Header = "size"
 	SKU         Header = "sku"
 	Units       Header = "units"
 	Weight      Header = "weight"
+	Type        Header = "type"
 )
 
 type Headers map[int]Header
+
+func (h Headers) Contain(headers ...Header) (ok bool) {
+	var (
+		count, total int
+
+		h1, h2 Header
+	)
+
+	total = len(headers)
+
+	for _, h1 = range h {
+		for _, h2 = range headers {
+			if h1 == h2 {
+				count++
+			}
+		}
+	}
+
+	ok = count == total
+
+	return
+}
