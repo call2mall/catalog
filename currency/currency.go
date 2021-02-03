@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/call2mall/catalog/curl"
+	"github.com/call2mall/catalog/proxy"
 	"net/http"
 	"strings"
 	"sync"
@@ -29,7 +30,7 @@ func GetFactor(from, to string) (factor float64, err error) {
 	if time.Now().After(lastTime) {
 		lastTime = time.Now().Add(refreshPeriod)
 
-		rawurl := "https://www.cbr-xml-daily.ru/daily_json.js"
+		rawUrl := "https://www.cbr-xml-daily.ru/daily_json.js"
 
 		header := http.Header{}
 		header.Add("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36")
@@ -41,13 +42,13 @@ func GetFactor(from, to string) (factor float64, err error) {
 			bs    []byte
 			state uint
 		)
-		bs, state, err = curl.LoadByUrl(rawurl, header, true)
+		bs, state, err = curl.LoadByUrl(rawUrl, header, proxy.NewProxies([]string{}))
 		if err != nil {
 			return
 		}
 
 		if state != 200 {
-			err = fmt.Errorf("get unexpected status on `%s`", rawurl)
+			err = fmt.Errorf("get unexpected status on `%s`", rawUrl)
 
 			return
 		}
