@@ -40,7 +40,7 @@ func DownloadFromWetransfer(rawUrl string, proxies *proxy.Proxies, archivePath s
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.ProxyServer(addr),
-		chromedp.Flag("headless", false),
+		chromedp.Flag("headless", true),
 		chromedp.Flag("disable-gpu", false),
 		chromedp.Flag("enable-automation", false),
 		chromedp.Flag("disable-extensions", false),

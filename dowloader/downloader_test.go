@@ -14,7 +14,7 @@ func TestDownloadFromWetransfer(t *testing.T) {
 		"http://emiles01:xVypbJnv@51.89.131.103:29842",
 	})
 
-	err := DownloadFromWetransfer("https://wetransfer.com/downloads/7446adf6085bf8ba8356bf2e90d6b68e20210203085548/61f896", proxies, ".")
+	err := DownloadFromWetransfer("https://we.tl/t-97j6I5ZDF2", proxies, ".")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
