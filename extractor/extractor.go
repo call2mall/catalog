@@ -5,6 +5,7 @@ import (
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/parser"
 	"github.com/leprosus/golang-log"
+	"os"
 )
 
 type Extractor struct {
@@ -15,8 +16,14 @@ type Extractor struct {
 func NewExtractor(filePath string) (e *Extractor, err error) {
 	e = &Extractor{}
 
+	var file *os.File
+	file, err = os.Open(filePath)
+	if err != nil {
+		return
+	}
+
 	e.filePath = filePath
-	e.parser, err = parser.NewParser(filePath)
+	e.parser, err = parser.NewParser(file)
 	if err != nil {
 		return
 	}

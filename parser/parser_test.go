@@ -2,11 +2,18 @@ package parser
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
 func TestParser(t *testing.T) {
-	parser, err := NewParser("../docs/210112 Osram LED Leuchtmittel.xlsx")
+	file, err := os.Open("../docs/210112 Osram LED Leuchtmittel.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var parser *Parser
+	parser, err = NewParser(file)
 	if err != nil {
 		t.Fatal(err)
 	}

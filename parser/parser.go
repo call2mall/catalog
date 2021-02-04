@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/leprosus/golang-log"
+	"io"
 	"regexp"
 	"strings"
 )
@@ -15,12 +16,12 @@ type Parser struct {
 	headers map[string]Headers
 }
 
-func NewParser(filePath string) (parser *Parser, err error) {
+func NewParser(reader io.Reader) (parser *Parser, err error) {
 	parser = &Parser{
 		data:    map[string]Data{},
 		headers: map[string]Headers{},
 	}
-	parser.file, err = excelize.OpenFile(filePath)
+	parser.file, err = excelize.OpenReader(reader)
 
 	return
 }
