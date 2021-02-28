@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"github.com/leprosus/golang-config"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -25,6 +26,33 @@ func NewProxies(list []string) (p *Proxies) {
 	}
 
 	p.Init(list)
+
+	return
+}
+
+var (
+	once     = &sync.Once{}
+	mx       = &sync.Mutex{}
+	instance *Proxies
+)
+
+func GetInstance() (p *Proxies, err error) {
+	mx.Lock()
+	defer mx.Unlock()
+
+	once.Do(func() {
+		path := config.Path("proxies_csv")
+
+		var list []string
+		list, err = LoadProxiesFromFile(path)
+		if err != nil {
+			return
+		}
+
+		instance = NewProxies(list)
+	})
+
+	p = instance
 
 	return
 }

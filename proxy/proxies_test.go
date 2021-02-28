@@ -41,6 +41,7 @@ func TestNewProxies(t *testing.T) {
 
 func TestCheckProxy(t *testing.T) {
 	proxies := NewProxies([]string{
+		"http://emiles01:xVypbJnv@51.89.131.158:29842",
 		"http://emiles01:xVypbJnv@51.83.17.222:29842",
 		"http://emiles01:xVypbJnv@51.83.17.50:29842",
 		"http://emiles01:xVypbJnv@51.91.196.148:29842",
