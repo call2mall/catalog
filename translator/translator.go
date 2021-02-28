@@ -10,24 +10,89 @@ import (
 	"strings"
 )
 
-func Translate(text string, proxies *proxy.Proxies) (translation string, err error) {
-	options := url.Values{}
-	options.Set("text", text)
-	options.Set("from", "de")
-	options.Set("to", "ru")
+type translateRes struct {
+	Result         string `json:"result"`
+	TranslatedText string `json:"translated_text"`
+}
 
+func Translate(text, from, to string, proxies *proxy.Proxies) (translation string, err error) {
+	options := url.Values{}
+	options.Set("text_to_translate", text)
+	options.Set("source_lang", from)
+	options.Set("translated_lang", to)
+	options.Set("use_cache_only", "false")
+
+	var bs []byte
+	bs, err = request("https://www.translate.com/translator/ajax_translate", options, proxies)
+	if err != nil {
+		return
+	}
+
+	var answer translateRes
+	err = json.Unmarshal(bs, &answer)
+	if err != nil {
+		return
+	}
+
+	if answer.Result != "success" {
+		err = fmt.Errorf("can't translate `%s` because get the answer: %s", text, string(bs))
+
+		return
+	}
+
+	translation = answer.TranslatedText
+
+	return
+}
+
+type detectionRes struct {
+	Result   string `json:"result"`
+	Language string `json:"language"`
+}
+
+func DetectLang(text string, proxies *proxy.Proxies) (lang string, err error) {
+	options := url.Values{}
+	options.Set("text_to_translate", text)
+
+	var bs []byte
+	bs, err = request("https://www.translate.com/translator/ajax_lang_auto_detect", options, proxies)
+	if err != nil {
+		return
+	}
+
+	var answer detectionRes
+	err = json.Unmarshal(bs, &answer)
+	if err != nil {
+		return
+	}
+
+	if answer.Result != "success" {
+		err = fmt.Errorf("can't detect language of `%s` because get the answer: %s", text, string(bs))
+
+		return
+	}
+
+	lang = answer.Language
+
+	return
+}
+
+func request(rawUrl string, options url.Values, proxies *proxy.Proxies) (bs []byte, err error) {
 	data := options.Encode()
 
 	var req *http.Request
-	req, err = http.NewRequest("POST", "https://www.bing.com/ttranslate", strings.NewReader(data))
+	req, err = http.NewRequest("POST", rawUrl, strings.NewReader(data))
 	if err != nil {
 		return
 	}
 
 	req.Header.Set("origin", "https://www.bing.com")
-	req.Header.Set("accept-language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7")
-	req.Header.Set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36")
-	req.Header.Set("content-type", "application/x-www-form-urlencoded")
+	req.Header.Set("accept-language", "en-US,en;q=0.9,ru-RU;q=0.8,ru;q=0.7,de;q=0.6,lt;q=0.5,pl;q=0.4,zh-CN;q=0.3,zh;q=0.2")
+	req.Header.Set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36")
+	req.Header.Set("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
+	req.Header.Set("origin", "https://www.translate.com")
+	req.Header.Set("referer", "https://www.translate.com/")
+	req.Header.Set("x-requested-with", "XMLHttpRequest")
 
 	req.Close = true
 
@@ -57,7 +122,6 @@ func Translate(text string, proxies *proxy.Proxies) (translation string, err err
 		_ = res.Body.Close()
 	}()
 
-	var bs []byte
 	bs, err = ioutil.ReadAll(res.Body)
 	if err != nil {
 		return
@@ -68,19 +132,6 @@ func Translate(text string, proxies *proxy.Proxies) (translation string, err err
 
 		return
 	}
-
-	translation = string(bs)
-
-	resStruct := struct {
-		Translation string `json:"translationResponse"`
-	}{}
-
-	err = json.Unmarshal(bs, &resStruct)
-	if err != nil {
-		return
-	}
-
-	translation = resStruct.Translation
 
 	return
 }
