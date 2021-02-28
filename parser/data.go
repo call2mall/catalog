@@ -89,7 +89,7 @@ func (c Cell) Float() (f64 float64, err error) {
 	return
 }
 
-func (c Cell) PriceInCent() (ui64 uint64, err error) {
+func (c Cell) PriceInCent() (ui64 uint32, err error) {
 	if c.value == "" {
 		return
 	}
@@ -106,7 +106,7 @@ func (c Cell) PriceInCent() (ui64 uint64, err error) {
 		f64 *= 100
 	}
 
-	ui64 = uint64(math.Ceil(f64))
+	ui64 = uint32(math.Ceil(f64))
 
 	return
 }
