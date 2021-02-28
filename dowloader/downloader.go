@@ -41,9 +41,25 @@ func DownloadFromWetransfer(rawUrl string, proxies *proxy.Proxies, archivePath s
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.ProxyServer(addr),
 		chromedp.Flag("headless", true),
-		chromedp.Flag("disable-gpu", false),
-		chromedp.Flag("enable-automation", false),
-		chromedp.Flag("disable-extensions", false),
+		chromedp.Flag("incognito", true),
+		chromedp.Flag("disable-gpu", true),
+		chromedp.Flag("disable-gpu-shader-disk-cache", true),
+		chromedp.Flag("enable-automation", true),
+		chromedp.Flag("disable-extensions", true),
+		chromedp.Flag("aggressive-cache-discard", true),
+		chromedp.Flag("disable-cache", true),
+		chromedp.Flag("disable-application-cache", true),
+		chromedp.Flag("disable-offline-load-stale-cache", true),
+		chromedp.Flag("disk-cache-dir", "/dev/null"),
+		chromedp.Flag("media-cache-dir", "/dev/null"),
+		chromedp.Flag("disk-cache-size", "1"),
+		chromedp.Flag("media-cache-size", "1"),
+		chromedp.Flag("disable-setuid-sandbox", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("disable-accelerated-2d-canvas", true),
+		chromedp.Flag("no-zygote", true),
+		chromedp.Flag("no-sandbox", true),
+		chromedp.Flag("disable-dev-profile", true),
 	)
 
 	ctx, cancel = chromedp.NewExecAllocator(ctx, opts...)
@@ -86,11 +102,35 @@ func DownloadFromWetransfer(rawUrl string, proxies *proxy.Proxies, archivePath s
 		fetch.Enable().WithHandleAuthRequests(true),
 		page.SetDownloadBehavior(page.SetDownloadBehaviorBehaviorAllow).WithDownloadPath(archivePath),
 		chromedp.Navigate(rawUrl),
-		chromedp.WaitVisible(".welcome__agree"),
-		chromedp.Click(`.welcome__agree`, chromedp.NodeVisible),
+
+		chromedp.WaitVisible(".logo"),
 		chromedp.Sleep(time.Second),
-		chromedp.WaitVisible(".welcome__button--accept"),
-		chromedp.Click(`.welcome__button--accept`, chromedp.NodeVisible),
+		chromedp.ActionFunc(func(ctx context.Context) (err error) {
+			go func() {
+				_ = chromedp.WaitVisible(".welcome__agree").Do(ctx)
+				_ = chromedp.Click(`.welcome__agree`, chromedp.NodeVisible).Do(ctx)
+			}()
+
+			return
+		}),
+		chromedp.Sleep(time.Second),
+		chromedp.ActionFunc(func(ctx context.Context) (err error) {
+			go func() {
+				_ = chromedp.WaitVisible(".welcome__button--accept").Do(ctx)
+				_ = chromedp.Click(`.welcome__button--accept`, chromedp.NodeVisible).Do(ctx)
+			}()
+
+			return
+		}),
+		chromedp.Sleep(time.Second),
+		chromedp.ActionFunc(func(ctx context.Context) (err error) {
+			go func() {
+				_ = chromedp.WaitVisible(".transfer__button").Do(ctx)
+				_ = chromedp.Click(`.transfer__button`, chromedp.NodeVisible).Do(ctx)
+			}()
+
+			return
+		}),
 		chromedp.Sleep(time.Second),
 		chromedp.WaitVisible(".transfer__button"),
 		chromedp.Click(`.transfer__button`, chromedp.NodeVisible),
