@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func Unzip(zipPath string, handler func(reader io.ReadCloser) (err error)) (err error) {
+func Unzip(zipPath string, handler func(reader io.ReadCloser, fileName string) (err error)) (err error) {
 	var reader *zip.ReadCloser
 	reader, err = zip.OpenReader(zipPath)
 	if err != nil {
@@ -26,7 +26,7 @@ func Unzip(zipPath string, handler func(reader io.ReadCloser) (err error)) (err 
 			return
 		}
 
-		err = handler(file)
+		err = handler(file, zipFile.Name)
 		if err != nil {
 			_ = file.Close()
 
