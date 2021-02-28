@@ -1,4 +1,4 @@
-package main
+package imap
 
 import (
 	"github.com/leprosus/golang-config"
@@ -6,15 +6,16 @@ import (
 )
 
 func init() {
-	_ = config.Init("../config.json")
+	_ = config.Init("../../config.json")
 }
 
 func TestImap(t *testing.T) {
-	imap, err := NewClient(config.String("imap.username"), config.String("imap.password"), config.String("imap.host"), uint(config.Int32("imap.port")))
+	imap, err := NewClient(config.String("imap.user"), config.String("imap.pass"), config.String("imap.host"), uint(config.Int32("imap.port")))
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	imap.SetFolder(config.String("imap.folder"))
 	imap.SetSearchMark(config.String("imap.mark"))
 
 	defer func() {

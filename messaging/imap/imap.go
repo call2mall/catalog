@@ -1,4 +1,4 @@
-package main
+package imap
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 type Client struct {
 	dialer *imap.Dialer
 	mark   string
+	folder string
 }
 
 type Email struct {
@@ -17,7 +18,7 @@ type Email struct {
 	Sent        time.Time
 	Size        uint64
 	Subject     string
-	UID         int
+	UID         uint32
 	MessageID   string
 	From        EmailAddr
 	To          EmailAddr
@@ -40,6 +41,7 @@ type Attach struct {
 func NewClient(username, password, host string, port uint) (c *Client, err error) {
 	c = &Client{}
 	c.dialer, err = imap.New(username, password, host, int(port))
+	c.folder = "INBOX"
 
 	return
 }
@@ -48,12 +50,26 @@ func (c *Client) SetSearchMark(mark string) {
 	c.mark = mark
 }
 
+func (c *Client) SetFolder(folder string) {
+	c.folder = folder
+}
+
 func (c *Client) Close() (err error) {
 	return c.dialer.Close()
 }
 
-func (c *Client) GetLatestEmail(lastUID int) (email Email, err error) {
-	err = c.dialer.SelectFolder("INBOX")
+func conv(ext imap.EmailAddresses) (inn EmailAddr) {
+	inn = EmailAddr{}
+
+	for key, val := range ext {
+		inn[key] = val
+	}
+
+	return
+}
+
+func (c *Client) GetAllEmails(lastUID int) (list []Email, err error) {
+	err = c.dialer.SelectFolder(c.folder)
 	if err != nil {
 		return
 	}
@@ -64,60 +80,68 @@ func (c *Client) GetLatestEmail(lastUID int) (email Email, err error) {
 		return
 	}
 
-	var maxUID int
-	for _, id := range uids {
-		if maxUID < id {
-			maxUID = id
+	if lastUID > -1 {
+		for i := 0; i < len(uids); i++ {
+			if uids[i] <= lastUID {
+				uids = append(uids[:i], uids[i+1:]...)
+				i--
+			}
 		}
 	}
 
-	if maxUID <= lastUID {
-		return
-	}
-
 	var emails map[int]*imap.Email
-	emails, err = c.dialer.GetEmails(maxUID)
+	emails, err = c.dialer.GetEmails(uids...)
 	if err != nil {
 		return
 	}
 
-	latest := emails[maxUID]
+	var attachList []Attach
+	for _, one := range emails {
+		attachList = []Attach{}
 
-	conv := func(ext imap.EmailAddresses) (inn EmailAddr) {
-		inn = EmailAddr{}
-
-		for key, val := range ext {
-			inn[key] = val
+		for _, attach := range one.Attachments {
+			attachList = append(attachList, Attach{
+				Name:     attach.Name,
+				MimeType: attach.MimeType,
+				Content:  attach.Content,
+			})
 		}
 
-		return
-	}
-
-	var attachList []Attach
-	for _, attach := range latest.Attachments {
-		attachList = append(attachList, Attach{
-			Name:     attach.Name,
-			MimeType: attach.MimeType,
-			Content:  attach.Content,
+		list = append(list, Email{
+			Flags:       one.Flags,
+			Received:    one.Received,
+			Sent:        one.Sent,
+			Size:        one.Size,
+			Subject:     one.Subject,
+			UID:         uint32(one.UID),
+			MessageID:   one.MessageID,
+			From:        conv(one.From),
+			To:          conv(one.To),
+			ReplyTo:     conv(one.ReplyTo),
+			CC:          conv(one.CC),
+			BCC:         conv(one.BCC),
+			Text:        one.Text,
+			HTML:        one.HTML,
+			Attachments: attachList,
 		})
 	}
 
-	email = Email{
-		Flags:       latest.Flags,
-		Received:    latest.Received,
-		Sent:        latest.Sent,
-		Size:        latest.Size,
-		Subject:     latest.Subject,
-		UID:         latest.UID,
-		MessageID:   latest.MessageID,
-		From:        conv(latest.From),
-		To:          conv(latest.To),
-		ReplyTo:     conv(latest.ReplyTo),
-		CC:          conv(latest.CC),
-		BCC:         conv(latest.BCC),
-		Text:        latest.Text,
-		HTML:        latest.HTML,
-		Attachments: attachList,
+	return
+}
+
+func (c *Client) GetLatestEmail(lastUID int) (email Email, err error) {
+	var list []Email
+	list, err = c.GetAllEmails(lastUID)
+	if err != nil {
+		return
+	}
+
+	var maxUID uint32
+	for _, one := range list {
+		if one.UID > maxUID {
+			maxUID = one.UID
+			email = one
+		}
 	}
 
 	return
