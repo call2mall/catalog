@@ -3,6 +3,7 @@ package extractor
 import (
 	"fmt"
 	"github.com/call2mall/catalog/dao"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,6 +17,7 @@ func TestExtractor(t *testing.T) {
 
 	var e *Extractor
 
+	var file *os.File
 	for _, path := range matches {
 		if strings.Contains(path, "EICHHORN") ||
 			strings.Contains(path, "Notebooks Lenovo New") ||
@@ -33,12 +35,17 @@ func TestExtractor(t *testing.T) {
 
 		fmt.Println("Extracting of", path)
 
-		e, err = NewExtractor(path)
+		file, err = os.Open(path)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		var list dao.SKUList
+		e, err = NewExtractor(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var list dao.UnitList
 		list, err = e.Extract()
 		if err != nil {
 			t.Fatal(err)
