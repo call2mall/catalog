@@ -1,4 +1,17 @@
 {
+  "psql": {
+    "host": "localhost",
+    "port": 5432,
+    "user": "username",
+    "pass": "password",
+    "database": "database"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "pass": "",
+    "database": 0
+  },
   "log": {
     "level": "info",
     "stdout": false,
@@ -13,8 +26,12 @@
   "imap": {
     "host": "imap.yandex.com",
     "port": 993,
-    "username": "",
-    "password": "",
+    "user": "",
+    "pass": "",
+    "folder": "Avides",
     "mark": "avides"
+  },
+  "grabber": {
+    "path": "./download"
   }
 }
