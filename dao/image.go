@@ -3,7 +3,7 @@ package dao
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/call2mall/storage/db"
+	"github.com/call2mall/conn"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -16,7 +16,7 @@ func (i Image) Hash() (hash string) {
 }
 
 func (i Image) Store() (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		return i.store(tx)
 	})
 

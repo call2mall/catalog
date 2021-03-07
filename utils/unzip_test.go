@@ -7,7 +7,7 @@ import (
 
 func TestUnzip(t *testing.T) {
 	var count int
-	err := Unzip("../docs/wetransfer-7446ad.zip", func(reader io.ReadCloser) (err error) {
+	err := Unzip("../docs/wetransfer-7446ad.zip", func(reader io.ReadCloser, _ string) (err error) {
 		count++
 
 		return

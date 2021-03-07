@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/leprosus/golang-log"
 	"io"
 	"regexp"

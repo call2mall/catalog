@@ -1,4 +1,4 @@
-package asin
+package google
 
 import (
 	"fmt"
@@ -15,10 +15,10 @@ func TestFindPageByASIN(t *testing.T) {
 		"http://emiles01:xVypbJnv@51.89.131.103:29842",
 	})
 
-	urlMap, err := FindPageByASIN("B004LDFV1U", proxies)
+	urlList, err := FindPageByASIN("B001A1V4M6", proxies)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	fmt.Println(urlMap)
+	fmt.Println(urlList)
 }

@@ -2,7 +2,7 @@ package dao
 
 import (
 	"database/sql"
-	"github.com/call2mall/storage/db"
+	"github.com/call2mall/conn"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -21,7 +21,7 @@ type Unit struct {
 }
 
 func (u *Unit) Store() (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		return u.store(tx)
 	})
 
@@ -78,7 +78,7 @@ func (ul UnitList) ExtractASINList() (l ASINList) {
 }
 
 func (ul UnitList) Store() (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		for _, unit := range ul {
 			err = unit.store(tx)
 			if err != nil {

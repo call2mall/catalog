@@ -40,7 +40,7 @@ func Run(rawUrl string, actions []chromedp.Action, proxies *proxy.Proxies) (err 
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.ProxyServer(addr),
-		chromedp.Flag("headless", false),
+		chromedp.Flag("headless", true),
 		chromedp.Flag("incognito", true),
 		chromedp.Flag("disable-gpu", true),
 		chromedp.Flag("disable-gpu-shader-disk-cache", true),

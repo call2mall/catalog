@@ -2,7 +2,7 @@ package dao
 
 import (
 	"fmt"
-	"github.com/call2mall/storage/db"
+	"github.com/call2mall/conn"
 	"github.com/jmoiron/sqlx"
 	"net/url"
 	"strings"
@@ -27,7 +27,7 @@ func ListToOriginList(list []string) (originList OriginList, err error) {
 		urlData.Host = strings.Replace(urlData.Host, "amazon.", "", 1)
 
 		switch urlData.Host {
-		case "co.uk", "co.au", "sg":
+		case "co.uk", "com.au", "sg":
 			lang = "en"
 		case "ae":
 			lang = "ar"
@@ -58,7 +58,7 @@ func ListToOriginList(list []string) (originList OriginList, err error) {
 }
 
 func (o OriginList) Store(asin ASIN) (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		query := `insert into asin.origin (asin, lang, url) values ($1, $2, $3) on conflict (asin, lang) do nothing;`
 
 		for lang, rawUrl := range o {
@@ -77,7 +77,7 @@ func (o OriginList) Store(asin ASIN) (err error) {
 func (a ASIN) LoadOrigins() (list OriginList, err error) {
 	list = OriginList{}
 
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		query := `select lang, url from asin.origin where asin = $1;`
 
 		var rows *sqlx.Rows

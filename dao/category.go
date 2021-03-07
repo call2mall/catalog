@@ -3,7 +3,7 @@ package dao
 import (
 	"database/sql"
 	"fmt"
-	"github.com/call2mall/storage/db"
+	"github.com/call2mall/conn"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -14,7 +14,7 @@ type Category struct {
 }
 
 func (c *Category) Store() (id uint32, err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		id, err = c.store(tx)
 
 		return

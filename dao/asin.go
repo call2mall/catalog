@@ -2,14 +2,14 @@ package dao
 
 import (
 	"database/sql"
-	"github.com/call2mall/storage/db"
+	"github.com/call2mall/conn"
 	"github.com/jmoiron/sqlx"
 )
 
 type ASIN string
 
 func (a ASIN) MarkSearchAs(state QueueState) (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		task := NewQueueTask("asin.searcher_queue", "asin", a)
 		task.State = state
 
@@ -22,7 +22,7 @@ func (a ASIN) MarkSearchAs(state QueueState) (err error) {
 }
 
 func (a ASIN) MarkEnrichAs(state QueueState) (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		task := NewQueueTask("asin.enricher_queue", "asin", a)
 		task.State = state
 
@@ -35,7 +35,7 @@ func (a ASIN) MarkEnrichAs(state QueueState) (err error) {
 }
 
 func (a ASIN) PushToEnricherQueue() (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		task := NewQueueTask("asin.enricher_queue", "asin", a)
 
 		err = pushTaskToQueue(tx, task)
@@ -47,7 +47,7 @@ func (a ASIN) PushToEnricherQueue() (err error) {
 }
 
 func (a ASIN) PushToPublisherQueue() (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		task := NewQueueTask("asin.publisher_queue", "asin", a)
 
 		err = pushTaskToQueue(tx, task)
@@ -61,7 +61,7 @@ func (a ASIN) PushToPublisherQueue() (err error) {
 type ASINList []ASIN
 
 func (l ASINList) Store() (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		query := `insert into asin.list (asin) values ($1) on conflict (asin) do nothing;`
 
 		for _, asin := range l {
@@ -78,7 +78,7 @@ func (l ASINList) Store() (err error) {
 }
 
 func (l ASINList) PushToSearchQueue() (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		var task QueueTask
 
 		for _, asin := range l {
@@ -97,7 +97,7 @@ func (l ASINList) PushToSearchQueue() (err error) {
 }
 
 func PopASINToSearch(limit uint) (list ASINList, err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		var taskList QueueTaskList
 		taskList, err = popTaskFromQueue(tx, "asin.searcher_queue", "asin", limit)
 		if err != nil {
@@ -115,7 +115,7 @@ func PopASINToSearch(limit uint) (list ASINList, err error) {
 }
 
 func DefrostSearchASIN(duration uint32) (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		err = defrostTasks(tx, "asin.searcher_queue", duration)
 
 		return
@@ -125,7 +125,7 @@ func DefrostSearchASIN(duration uint32) (err error) {
 }
 
 func PopASINToEnrich(limit uint) (list ASINList, err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		var taskList QueueTaskList
 		taskList, err = popTaskFromQueue(tx, "asin.enricher_queue", "asin", limit)
 		if err != nil {
@@ -143,7 +143,7 @@ func PopASINToEnrich(limit uint) (list ASINList, err error) {
 }
 
 func DefrostEnrichASIN(duration uint32) (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		err = defrostTasks(tx, "asin.enricher_queue", duration)
 
 		return
@@ -153,7 +153,7 @@ func DefrostEnrichASIN(duration uint32) (err error) {
 }
 
 func LoadAllASIN(isReady bool) (list ASINList, err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		query := `select asin from asin.list l where l.is_ready = ?;`
 
 		var rows *sqlx.Rows
@@ -216,7 +216,7 @@ type ASINMeta struct {
 }
 
 func GetFeaturesByASIN(number string) (asin ASINFeatures, err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		query := `select l.category_id, c.name, coalesce(c.l8n, ''), l.title, l.l8n, i.bytes, i.hash 
 					from asin.list l 
 					join asin.image i on l.image_hash = i.hash
@@ -251,7 +251,7 @@ func GetFeaturesByASIN(number string) (asin ASINFeatures, err error) {
 }
 
 func (af ASINFeatures) Store() (err error) {
-	err = db.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		var categoryId uint32
 		categoryId, err = af.Category.store(tx)
 		if err != nil {
