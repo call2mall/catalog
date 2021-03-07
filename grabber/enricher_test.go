@@ -19,7 +19,9 @@ func init() {
 }
 
 func TestEnricher(t *testing.T) {
-	err := RunEnrichASIN(10)
+	threads := config.UInt32("threads.searcher")
+
+	err := RunEnrichASIN(uint(threads))
 	if err != nil {
 		t.Fatal(err)
 	}

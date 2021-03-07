@@ -16,7 +16,9 @@ func init() {
 }
 
 func TestSearcher(t *testing.T) {
-	err := RunSearchASIN(10)
+	threads := config.UInt32("threads.searcher")
+
+	err := RunSearchASIN(uint(threads))
 	if err != nil {
 		t.Fatal(err)
 	}

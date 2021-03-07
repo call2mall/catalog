@@ -8,7 +8,6 @@ import (
 	"github.com/leprosus/golang-log"
 	"net/url"
 	"strings"
-	"sync"
 )
 
 var domains = []string{
@@ -27,7 +26,6 @@ var domains = []string{
 
 func SearchByUrl(asin string, proxies *proxy.Proxies) (urlList []string, err error) {
 	var (
-		wg      = &sync.WaitGroup{}
 		urlData url.URL
 
 		resUrl string
@@ -43,28 +41,20 @@ func SearchByUrl(asin string, proxies *proxy.Proxies) (urlList []string, err err
 			Path:   fmt.Sprintf("/review/product/%s", asin),
 		}
 
-		wg.Add(1)
+		resUrl, ok, err = searchByUrl(urlData, proxies)
+		if err != nil {
+			log.WarnFmt("Can't search review page for ASIN `%s`: %v", asin, err)
+		}
 
-		go func(urlData url.URL) {
-			defer wg.Done()
-
-			resUrl, ok, err = searchByUrl(urlData, proxies)
-			if err != nil {
-				log.WarnFmt("Can't search review page for ASIN `%s`: %v", asin, err)
+		if ok {
+			pos = strings.Index(resUrl, "/ref=")
+			if pos > -1 {
+				resUrl = resUrl[0:pos]
 			}
 
-			if ok {
-				pos = strings.Index(resUrl, "/ref=")
-				if pos > -1 {
-					resUrl = resUrl[0:pos]
-				}
-
-				urlList = append(urlList, resUrl)
-			}
-		}(urlData)
+			urlList = append(urlList, resUrl)
+		}
 	}
-
-	wg.Wait()
 
 	return
 }
