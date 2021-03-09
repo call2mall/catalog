@@ -24,7 +24,7 @@ var domains = []string{
 	"amazon.ae",
 }
 
-func SearchByUrl(asin string, proxies *proxy.Proxies) (urlList []string, err error) {
+func SearchByASIN(asin string, proxies *proxy.Proxies) (urlList []string, err error) {
 	var (
 		urlData url.URL
 

@@ -100,7 +100,7 @@ func searchOriginsByASIN(ch chan dao.ASIN, proxies *proxy.Proxies) {
 		}
 
 		if len(urlList) == 0 {
-			urlList, err = searcher.SearchByUrl(string(asin), proxies)
+			urlList, err = searcher.SearchByASIN(string(asin), proxies)
 			if err != nil {
 				err = fmt.Errorf("can't find amazon pages through amazon review pages by ASIN `%s`: %v", asin, err)
 

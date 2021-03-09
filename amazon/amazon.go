@@ -1,11 +1,9 @@
 package amazon
 
 import (
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/call2mall/catalog/crome"
 	"github.com/call2mall/catalog/proxy"
-	"net/url"
 	"strings"
 )
 
@@ -17,16 +15,7 @@ type Features struct {
 }
 
 func ExtractFeaturesByUrl(rawUrl string, proxies *proxy.Proxies) (features Features, ok bool, err error) {
-	cacheUrl := url.URL{
-		Scheme: "https",
-		Host:   "webcache.googleusercontent.com",
-		Path:   "search",
-		RawQuery: url.Values{
-			"q": []string{fmt.Sprintf("cache:%s", rawUrl)},
-		}.Encode(),
-	}
-
-	urlList := []string{rawUrl, cacheUrl.String()}
+	urlList := []string{rawUrl}
 
 	for _, curUrl := range urlList {
 		features, ok, err = extractFeaturesByUrl(curUrl, proxies)

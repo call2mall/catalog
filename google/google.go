@@ -13,8 +13,10 @@ import (
 var domainsRegExp = regexp.MustCompile("^(www\\.)?amazon\\.(co\\.uk|com\\.au|co\\.jp|ae|de|it|fr|es|nl|se|sg)$")
 
 func FindPageByASIN(asin string, proxies *proxy.Proxies) (urlList []string, err error) {
+	rawUrl := fmt.Sprintf("https://www.google.com/search?q=\"%s\"", asin)
+
 	var html string
-	html, err = lookupByGoogle(asin, proxies)
+	html, err = crome.GetHtml(rawUrl, proxies)
 	if err != nil {
 		return
 	}
@@ -55,8 +57,47 @@ func FindPageByASIN(asin string, proxies *proxy.Proxies) (urlList []string, err 
 	return
 }
 
-func lookupByGoogle(asin string, proxies *proxy.Proxies) (html string, err error) {
-	rawUrl := fmt.Sprintf("https://www.google.com/search?q=\"%s\"", asin)
+func FindCachedPageByUrl(rawUrl string, proxies *proxy.Proxies) (pageUrl string, err error) {
+	var html string
+	html, err = crome.GetHtml(rawUrl, proxies)
+	if err != nil {
+		return
+	}
 
-	return crome.GetHtml(rawUrl, proxies)
+	reader := strings.NewReader(html)
+
+	var doc *goquery.Document
+	doc, err = goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		return
+	}
+
+	var (
+		href    string
+		urlData *url.URL
+		matches [][]string
+	)
+	doc.Find("a").EachWithBreak(func(i int, sel *goquery.Selection) (ok bool) {
+		href = sel.AttrOr("href", "")
+
+		urlData, err = url.Parse(href)
+		if err != nil {
+			return true
+		}
+
+		matches = domainsRegExp.FindAllStringSubmatch(urlData.Host, -1)
+		if len(matches) == 0 {
+			return true
+		}
+
+		if !strings.Contains(urlData.Path, "webcache.googleusercontent.com") {
+			return
+		}
+
+		pageUrl = href
+
+		return false
+	})
+
+	return
 }

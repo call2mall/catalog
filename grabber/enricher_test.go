@@ -29,7 +29,7 @@ func TestEnricher(t *testing.T) {
 
 func TestExtractASINMeta(t *testing.T) {
 	var (
-		asin       = dao.ASIN("B0038ZCFDY")
+		asin       = dao.ASIN("B07K3SS94V")
 		originList dao.OriginList
 
 		features dao.ASINFeatures

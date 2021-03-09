@@ -20,7 +20,7 @@ func TestSearchByUrl(t *testing.T) {
 		"http://emiles01:xVypbJnv@51.89.130.55:29842",
 	})
 
-	urlList, err := SearchByUrl("B004K8K7MO", proxies)
+	urlList, err := SearchByASIN("B004K8K7MO", proxies)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
