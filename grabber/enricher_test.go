@@ -29,7 +29,7 @@ func TestEnricher(t *testing.T) {
 
 func TestExtractASINMeta(t *testing.T) {
 	var (
-		number     = dao.ASIN("B07RLTM7ZL")
+		asin       = dao.ASIN("B0038ZCFDY")
 		originList dao.OriginList
 
 		features dao.ASINFeatures
@@ -37,7 +37,7 @@ func TestExtractASINMeta(t *testing.T) {
 		err      error
 	)
 
-	originList, err = number.LoadOrigins()
+	originList, err = asin.LoadOrigins()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,13 +48,13 @@ func TestExtractASINMeta(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	features, ok, err = extractASINMeta(number, originList, proxies)
+	features, ok, err = extractASINFeatures(asin, originList, proxies)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if !ok {
-		t.Fatalf("Can't extract features from ASIN `%s`", number)
+		t.Fatalf("Can't extract features from ASIN `%s`", asin)
 	}
 
 	fmt.Println(features)

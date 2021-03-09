@@ -26,7 +26,7 @@ func ExtractFeaturesByUrl(rawUrl string, proxies *proxy.Proxies) (features Featu
 		}.Encode(),
 	}
 
-	urlList := []string{cacheUrl.String(), rawUrl}
+	urlList := []string{rawUrl, cacheUrl.String()}
 
 	for _, curUrl := range urlList {
 		features, ok, err = extractFeaturesByUrl(curUrl, proxies)

@@ -94,7 +94,7 @@ func enrichByASIN(ch chan dao.ASIN, proxies *proxy.Proxies) {
 			return
 		}
 
-		features, ok, err = extractASINMeta(asin, originList, proxies)
+		features, ok, err = extractASINFeatures(asin, originList, proxies)
 		if err != nil {
 			err = fmt.Errorf("can't extract meta-data for ASIN `%s`: %s", asin, err.Error())
 
@@ -116,7 +116,7 @@ func enrichByASIN(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 		err = features.Store()
 		if err != nil {
-			err = fmt.Errorf("can't store found ASIN meta-data for ASIN `%s`: %s", asin, err.Error())
+			err = fmt.Errorf("can't store found ASIN features for ASIN `%s`: %s", asin, err.Error())
 
 			e := asin.MarkEnrichAs(dao.Fail)
 			if e != nil {
@@ -150,10 +150,10 @@ func enrichByASIN(ch chan dao.ASIN, proxies *proxy.Proxies) {
 	}
 }
 
-func extractASINMeta(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Proxies) (features dao.ASINFeatures, ok bool, err error) {
+func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Proxies) (features dao.ASINFeatures, ok bool, err error) {
 	var (
 		lang     string
-		langList = []string{"en", "de", "it", "fr", "es", "nl"}
+		langList = []string{"en", "de", "it", "fr", "es", "nl", "sv", "ar", "jp"}
 
 		pageUrl string
 
@@ -167,7 +167,7 @@ func extractASINMeta(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Pr
 			continue
 		}
 
-		meta, image, ok, err = extractASINMetaFromPage(pageUrl, proxies)
+		meta, image, ok, err = extractASINMeta(pageUrl, proxies)
 		if err != nil {
 			log.DebugFmt("Can't enrich ASIN by page `%s`: %v", pageUrl, err)
 
@@ -175,7 +175,7 @@ func extractASINMeta(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Pr
 		}
 
 		if !ok {
-			log.DebugFmt("Can't extract necessary meta for ASIN `%s` by url `%s`", asin, pageUrl)
+			log.DebugFmt("Can't extract necessary features for ASIN `%s` by url `%s`", asin, pageUrl)
 
 			continue
 		}
@@ -214,7 +214,7 @@ func extractASINMeta(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Pr
 		features.Image = image
 		features.ASINMeta = meta
 
-		ok = true
+		ok = len(meta.Title) > 0 && len(meta.Category.Name) > 0
 
 		return
 	}
@@ -222,7 +222,7 @@ func extractASINMeta(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Pr
 	return
 }
 
-func extractASINMetaFromPage(pageUrl string, proxies *proxy.Proxies) (meta dao.ASINMeta, image dao.Image, ok bool, err error) {
+func extractASINMeta(pageUrl string, proxies *proxy.Proxies) (meta dao.ASINMeta, image dao.Image, ok bool, err error) {
 	var features amazon.Features
 	features, ok, err = amazon.ExtractFeaturesByUrl(pageUrl, proxies)
 	if err != nil {
