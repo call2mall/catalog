@@ -15,23 +15,6 @@ type Features struct {
 }
 
 func ExtractFeaturesByUrl(rawUrl string, proxies *proxy.Proxies) (features Features, ok bool, err error) {
-	urlList := []string{rawUrl}
-
-	for _, curUrl := range urlList {
-		features, ok, err = extractFeaturesByUrl(curUrl, proxies)
-		if !ok {
-			continue
-		}
-
-		if err != nil {
-			continue
-		}
-	}
-
-	return
-}
-
-func extractFeaturesByUrl(rawUrl string, proxies *proxy.Proxies) (features Features, ok bool, err error) {
 	features.Url = rawUrl
 
 	var html string
