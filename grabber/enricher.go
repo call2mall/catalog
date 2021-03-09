@@ -202,9 +202,21 @@ func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *prox
 				continue
 			}
 
+			if len(meta.Title) == 0 {
+				log.WarnFmt("Get translated empty title for ASIN `%s` by url `%s`", asin, pageUrl)
+
+				continue
+			}
+
 			meta.Category.Name, err = translator.Translate(meta.Category.Name, lang, "en", proxies)
 			if err != nil {
 				log.ErrorFmt("Can't translate category for ASIN `%s`: %s", asin, err.Error())
+
+				continue
+			}
+
+			if len(meta.Category.Name) == 0 {
+				log.WarnFmt("Get translated empty category name for ASIN `%s` by url `%s`", asin, pageUrl)
 
 				continue
 			}
@@ -214,7 +226,7 @@ func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *prox
 		features.Image = image
 		features.ASINMeta = meta
 
-		ok = len(meta.Title) > 0 && len(meta.Category.Name) > 0
+		ok = true
 
 		return
 	}
