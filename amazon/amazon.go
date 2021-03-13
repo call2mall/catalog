@@ -2,7 +2,7 @@ package amazon
 
 import (
 	"github.com/PuerkitoBio/goquery"
-	"github.com/call2mall/catalog/crome"
+	"github.com/call2mall/catalog/chrome"
 	"github.com/call2mall/catalog/proxy"
 	"strings"
 )
@@ -18,7 +18,7 @@ func ExtractFeaturesByUrl(rawUrl string, proxies *proxy.Proxies) (features Featu
 	features.Url = rawUrl
 
 	var html string
-	html, err = crome.GetHtml(features.Url, proxies)
+	html, err = chrome.GetHtml(features.Url, proxies)
 	if err != nil {
 		return
 	}

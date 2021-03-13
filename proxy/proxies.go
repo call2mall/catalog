@@ -77,7 +77,8 @@ func (p *Proxies) Next() (addr string, ok bool) {
 		return
 	}
 
-	val, ok := p.list.Load(p.ix)
+	var val interface{}
+	val, ok = p.list.Load(p.ix)
 	if !ok {
 		val, ok = p.list.Load(0)
 		if !ok {

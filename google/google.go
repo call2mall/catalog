@@ -3,7 +3,7 @@ package google
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/call2mall/catalog/crome"
+	"github.com/call2mall/catalog/chrome"
 	"github.com/call2mall/catalog/proxy"
 	"net/url"
 	"regexp"
@@ -16,7 +16,7 @@ func FindPageByASIN(asin string, proxies *proxy.Proxies) (urlList []string, err 
 	rawUrl := fmt.Sprintf("https://www.google.com/search?q=\"%s\"", asin)
 
 	var html string
-	html, err = crome.GetHtml(rawUrl, proxies)
+	html, err = chrome.GetHtml(rawUrl, proxies)
 	if err != nil {
 		return
 	}

@@ -1,8 +1,7 @@
-package crome
+package chrome
 
 import (
 	"context"
-	"fmt"
 	"github.com/call2mall/catalog/proxy"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/fetch"
@@ -14,33 +13,33 @@ import (
 )
 
 func Run(rawUrl string, actions []chromedp.Action, proxies *proxy.Proxies) (err error) {
-	proxyAddr, ok := proxies.Next()
-	if !ok {
-		err = fmt.Errorf("can't get next proxy address")
+	opts := chromedp.DefaultExecAllocatorOptions[:]
 
-		return
+	var proxyUser, proxyPass string
+
+	proxyAddr, withProxy := proxies.Next()
+	if withProxy {
+		var proxyData *url.URL
+		proxyData, err = url.Parse(proxyAddr)
+		if err != nil {
+			return
+		}
+
+		userInfo := proxyData.User
+		proxyData.User = nil
+
+		addr := proxyData.String()
+
+		proxyUser = userInfo.Username()
+		proxyPass, _ = userInfo.Password()
+
+		opts = append(opts, chromedp.ProxyServer(addr))
 	}
-
-	var proxyData *url.URL
-	proxyData, err = url.Parse(proxyAddr)
-	if err != nil {
-		return
-	}
-
-	userInfo := proxyData.User
-	proxyData.User = nil
-
-	addr := proxyData.String()
-
-	username := userInfo.Username()
-	password, _ := userInfo.Password()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.ProxyServer(addr),
-		chromedp.Flag("headless", true),
+	opts = append(opts, chromedp.Flag("headless", true),
 		chromedp.Flag("incognito", true),
 		chromedp.Flag("disable-gpu", true),
 		chromedp.Flag("disable-gpu-shader-disk-cache", true),
@@ -71,32 +70,34 @@ func Run(rawUrl string, actions []chromedp.Action, proxies *proxy.Proxies) (err 
 		_ = chromedp.Cancel(ctx)
 	}()
 
-	chromedp.ListenTarget(ctx, func(ev interface{}) {
-		go func() {
-			var err error
+	if withProxy {
+		chromedp.ListenTarget(ctx, func(ev interface{}) {
+			go func() {
+				var err error
 
-			switch ev := ev.(type) {
-			case *fetch.EventAuthRequired:
-				execCtx := cdp.WithExecutor(ctx, chromedp.FromContext(ctx).Target)
+				switch ev := ev.(type) {
+				case *fetch.EventAuthRequired:
+					execCtx := cdp.WithExecutor(ctx, chromedp.FromContext(ctx).Target)
 
-				res := &fetch.AuthChallengeResponse{
-					Response: fetch.AuthChallengeResponseResponseProvideCredentials,
-					Username: username,
-					Password: password,
+					res := &fetch.AuthChallengeResponse{
+						Response: fetch.AuthChallengeResponseResponseProvideCredentials,
+						Username: proxyUser,
+						Password: proxyPass,
+					}
+
+					err = fetch.ContinueWithAuth(ev.RequestID, res).Do(execCtx)
+				case *fetch.EventRequestPaused:
+					execCtx := cdp.WithExecutor(ctx, chromedp.FromContext(ctx).Target)
+
+					err = fetch.ContinueRequest(ev.RequestID).Do(execCtx)
 				}
 
-				err = fetch.ContinueWithAuth(ev.RequestID, res).Do(execCtx)
-			case *fetch.EventRequestPaused:
-				execCtx := cdp.WithExecutor(ctx, chromedp.FromContext(ctx).Target)
-
-				err = fetch.ContinueRequest(ev.RequestID).Do(execCtx)
-			}
-
-			if err != nil {
-				log.ErrorFmt("Catch error on proxy auth of `%s`: %v", proxyAddr, err)
-			}
-		}()
-	})
+				if err != nil {
+					log.ErrorFmt("Catch error on proxy auth of `%s`: %v", proxyAddr, err)
+				}
+			}()
+		})
+	}
 
 	var headers = map[string]interface{}{
 		"accept-language": "en-US,en;q=0.9,de;q=0.8,fr;q=0.7,it;q=0.6,es;q=0.5,nl;q=0.4,*;q=0.2",
