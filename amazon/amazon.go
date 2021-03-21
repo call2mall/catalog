@@ -21,12 +21,14 @@ import (
 
 type Amazon struct{}
 
-var domainsRegExp = regexp.MustCompile("^(www\\.)?amazon\\.(co\\.uk|com\\.au|co\\.jp|ae|de|it|fr|es|nl|se|sg)$")
-
 func (a Amazon) FindPages(asin dao.ASIN, proxies *proxy.Proxies) (urlList []string, err error) {
 	s := search.NewSearch(proxies)
 
-	var list []string
+	var (
+		domainsRegExp = regexp.MustCompile("^(www\\.)?amazon\\.(co\\.uk|com\\.au|co\\.jp|ae|de|it|fr|es|nl|se|sg)$")
+		list          []string
+	)
+
 	list, err = s.Search(fmt.Sprintf("\"%s\"", asin))
 	if err != nil {
 		return
@@ -36,6 +38,15 @@ func (a Amazon) FindPages(asin dao.ASIN, proxies *proxy.Proxies) (urlList []stri
 		urlData *url.URL
 		matches [][]string
 	)
+
+	b := browser.NewBrowser()
+	proxyAddr, ok := proxies.Next()
+	if ok {
+		err = b.Proxy(proxyAddr)
+		if err != nil {
+			return
+		}
+	}
 
 	for _, urlRaw := range list {
 		urlData, err = url.Parse(urlRaw)
@@ -48,12 +59,107 @@ func (a Amazon) FindPages(asin dao.ASIN, proxies *proxy.Proxies) (urlList []stri
 			continue
 		}
 
-		if !strings.Contains(urlData.Path, "/dp/") {
+		if strings.Contains(urlData.Path, "/review/product/") {
+			urlRaw, ok, err = extractOriginFromProductReport(urlData, b)
+			if err != nil || !ok {
+				continue
+			}
+		} else if !strings.Contains(urlData.Path, "/dp/") {
 			continue
 		}
 
 		urlList = append(urlList, urlRaw)
 	}
+
+	if len(urlList) == 0 {
+		urlList, err = searchThroughProductReport(asin, b)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func searchThroughProductReport(asin dao.ASIN, b *browser.Browser) (urlList []string, err error) {
+	var (
+		urlData url.URL
+
+		resUrl string
+		ok     bool
+
+		pos int
+
+		domains = []string{
+			"amazon.co.uk",
+			"amazon.com.au",
+			"amazon.co.jp",
+			"amazon.sg",
+			"amazon.nl",
+			"amazon.se",
+			"amazon.de",
+			"amazon.fr",
+			"amazon.es",
+			"amazon.it",
+			"amazon.ae",
+		}
+	)
+
+	for _, host := range domains {
+		urlData = url.URL{
+			Scheme: "https",
+			Host:   host,
+			Path:   fmt.Sprintf("/review/product/%s", asin),
+		}
+
+		resUrl, ok, err = extractOriginFromProductReport(&urlData, b)
+		if err != nil {
+			return
+		}
+
+		if ok {
+			pos = strings.Index(resUrl, "/ref=")
+			if pos > -1 {
+				resUrl = resUrl[0:pos]
+			}
+
+			urlList = append(urlList, resUrl)
+		}
+	}
+
+	return
+}
+
+func extractOriginFromProductReport(urlData *url.URL, b *browser.Browser) (resUrl string, ok bool, err error) {
+	var html string
+	html, err = b.GetHtml(urlData.String())
+	if err != nil {
+		return
+	}
+
+	reader := strings.NewReader(html)
+
+	var doc *goquery.Document
+	doc, err = goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		return
+	}
+
+	resUrl, ok = doc.Find(".product-info a.a-link-normal[href]").First().Attr("href")
+
+	var resData *url.URL
+	resData, err = url.Parse(resUrl)
+	if err != nil {
+		return
+	}
+
+	if !strings.HasPrefix(resUrl, "http") {
+		resData = urlData.ResolveReference(resData)
+	}
+
+	resData.RawQuery = url.Values{}.Encode()
+
+	resUrl = resData.String()
 
 	return
 }

@@ -17,7 +17,7 @@ func init() {
 
 type OriginList map[string]string
 
-func ListToOriginList(list []string) (originList OriginList, err error) {
+func UrlsToOriginList(list []string) (originList OriginList, err error) {
 	originList = OriginList{}
 
 	var country string

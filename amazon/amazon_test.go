@@ -2,6 +2,7 @@ package amazon
 
 import (
 	"fmt"
+	"github.com/call2mall/catalog/browser"
 	"github.com/call2mall/catalog/proxy"
 	"testing"
 )
@@ -41,4 +42,15 @@ func TestAmazon_ExtractMeta(t *testing.T) {
 	}
 
 	fmt.Println(props)
+}
+
+func TestSearchThroughProductReport(t *testing.T) {
+	b := browser.NewBrowser()
+
+	urlList, err := searchThroughProductReport("B004K8K7MO", b)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	fmt.Println(urlList)
 }

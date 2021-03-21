@@ -77,15 +77,15 @@ func (s *Search) Search(query string) (urlList []string, err error) {
 		return
 	}
 
-	chrome := browser.NewBrowser()
-	err = chrome.Proxy(proxyAddr)
+	b := browser.NewBrowser()
+	err = b.Proxy(proxyAddr)
 	if err != nil {
 		return
 	}
 
-	chrome.Timeout(s.timeout)
+	b.Timeout(s.timeout)
 
-	urlList, err = searcher.Search(query, chrome)
+	urlList, err = searcher.Search(query, b)
 
 	return
 }
