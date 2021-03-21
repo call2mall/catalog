@@ -1,20 +1,17 @@
 package dowloader
 
 import (
-	"github.com/call2mall/catalog/proxy"
+	"github.com/call2mall/catalog/browser"
 	"testing"
+	"time"
 )
 
 func TestDownloadFromWetransfer(t *testing.T) {
-	proxies := proxy.NewProxies([]string{
-		"http://emiles01:xVypbJnv@51.89.10.102:29842",
-		"http://emiles01:xVypbJnv@51.89.130.34:29842",
-		"http://emiles01:xVypbJnv@51.83.17.111:29842",
-		"http://emiles01:xVypbJnv@51.89.31.32:29842",
-		"http://emiles01:xVypbJnv@51.89.131.103:29842",
-	})
+	b := browser.NewBrowser()
+	b.Timeout(2 * time.Minute)
+	b.Headless(false)
 
-	err := DownloadFromWetransfer("https://we.tl/t-97j6I5ZDF2", proxies, ".")
+	err := DownloadFromWetransfer("https://we.tl/t-oIVZCqVB0v", ".", b)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

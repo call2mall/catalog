@@ -1,11 +1,10 @@
-package grabber
+package searcher
 
 import (
 	"fmt"
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/google"
 	"github.com/call2mall/catalog/proxy"
-	"github.com/call2mall/catalog/searcher"
 	"github.com/leprosus/golang-log"
 	"github.com/pkg/errors"
 	"time"
@@ -100,7 +99,7 @@ func searchOriginsByASIN(ch chan dao.ASIN, proxies *proxy.Proxies) {
 		}
 
 		if len(urlList) == 0 {
-			urlList, err = searcher.SearchByASIN(string(asin), proxies)
+			urlList, err = SearchByASIN(string(asin), proxies)
 			if err != nil {
 				err = fmt.Errorf("can't find amazon pages through amazon review pages by ASIN `%s`: %v", asin, err)
 

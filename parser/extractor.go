@@ -1,21 +1,20 @@
-package extractor
+package parser
 
 import (
 	"fmt"
 	"github.com/call2mall/catalog/dao"
-	"github.com/call2mall/catalog/parser"
 	"github.com/leprosus/golang-log"
 	"io"
 )
 
 type Extractor struct {
-	parser *parser.Parser
+	parser *Parser
 }
 
 func NewExtractor(reader io.Reader) (e *Extractor, err error) {
 	e = &Extractor{}
 
-	e.parser, err = parser.NewParser(reader)
+	e.parser, err = NewParser(reader)
 	if err != nil {
 		return
 	}
@@ -60,13 +59,13 @@ func (e *Extractor) definePriceType() (priceType PriceType, err error) {
 		return
 	}
 
-	var headers parser.Headers
+	var headers Headers
 	_, headers, err = e.parser.Parse("Packinglist")
 	if err != nil {
 		return
 	}
 
-	if headers.Contain(parser.LagerId, parser.EAN, parser.UnitPrice) {
+	if headers.Contain(LagerId, EAN, UnitPrice) {
 		priceType = PriceList
 
 		return
@@ -84,7 +83,7 @@ func (e *Extractor) definePriceType() (priceType PriceType, err error) {
 }
 
 func (e *Extractor) extractPriceList() (list dao.UnitList, err error) {
-	var data parser.Data
+	var data Data
 	data, _, err = e.parser.Parse("Packinglist")
 	if err != nil {
 		return
@@ -92,7 +91,7 @@ func (e *Extractor) extractPriceList() (list dao.UnitList, err error) {
 
 	var (
 		unit dao.Unit
-		cell parser.Cell
+		cell Cell
 		ok   bool
 	)
 	for _, row := range data {
@@ -100,34 +99,34 @@ func (e *Extractor) extractPriceList() (list dao.UnitList, err error) {
 			Condition: dao.Returned,
 		}
 
-		cell, ok = row[parser.ASIN]
+		cell, ok = row[ASIN]
 		if !ok || cell.String() == "" {
 			continue
 		}
 		unit.ASIN = dao.ASIN(cell.String())
 
-		cell, ok = row[parser.LagerId]
+		cell, ok = row[LagerId]
 		if ok {
 			unit.WarehouseId = cell.String()
 		}
 
-		cell, ok = row[parser.SKU]
+		cell, ok = row[SKU]
 		if ok {
 			unit.SKU = cell.String()
 		}
 
-		cell, ok = row[parser.EAN]
+		cell, ok = row[EAN]
 		if ok {
 			unit.EAN = cell.String()
 		}
 
-		cell, ok = row[parser.Condition]
+		cell, ok = row[Condition]
 		if ok {
 			unit.Condition = dao.ConvCondition(cell.String())
 		}
 
 		unit.Quantity = 1
-		cell, ok = row[parser.Quantity]
+		cell, ok = row[Quantity]
 		if ok {
 			unit.Quantity, err = cell.UInt32()
 			if err != nil {
@@ -135,7 +134,7 @@ func (e *Extractor) extractPriceList() (list dao.UnitList, err error) {
 			}
 		}
 
-		cell, ok = row[parser.UnitPrice]
+		cell, ok = row[UnitPrice]
 		if !ok {
 			continue
 		}
@@ -156,10 +155,10 @@ func (e *Extractor) extractPriceList() (list dao.UnitList, err error) {
 
 func (e *Extractor) extractCollection() (list dao.UnitList, err error) {
 	var (
-		data    parser.Data
-		headers parser.Headers
+		data    Data
+		headers Headers
 
-		intersect parser.Header
+		intersect Header
 		ok        bool
 	)
 
@@ -176,7 +175,7 @@ func (e *Extractor) extractCollection() (list dao.UnitList, err error) {
 	}
 
 	var (
-		cell  parser.Cell
+		cell  Cell
 		price uint32
 
 		unitPriceByIntersect = map[string]uint32{}
@@ -192,9 +191,9 @@ func (e *Extractor) extractCollection() (list dao.UnitList, err error) {
 		}
 		intersectValue = cell.String()
 
-		cell, ok = row[parser.UnitPrice]
+		cell, ok = row[UnitPrice]
 		if !ok {
-			err = fmt.Errorf("there aren't `%s` on Overview sheet", parser.UnitPrice)
+			err = fmt.Errorf("there aren't `%s` on Overview sheet", UnitPrice)
 
 			return
 		}
@@ -218,34 +217,34 @@ func (e *Extractor) extractCollection() (list dao.UnitList, err error) {
 			Condition: dao.Returned,
 		}
 
-		cell, ok = row[parser.ASIN]
+		cell, ok = row[ASIN]
 		if !ok || cell.String() == "" {
 			continue
 		}
 		unit.ASIN = dao.ASIN(cell.String())
 
-		cell, ok = row[parser.LagerId]
+		cell, ok = row[LagerId]
 		if ok {
 			unit.WarehouseId = cell.String()
 		}
 
-		cell, ok = row[parser.SKU]
+		cell, ok = row[SKU]
 		if ok {
 			unit.SKU = cell.String()
 		}
 
-		cell, ok = row[parser.EAN]
+		cell, ok = row[EAN]
 		if ok {
 			unit.EAN = cell.String()
 		}
 
-		cell, ok = row[parser.Condition]
+		cell, ok = row[Condition]
 		if ok {
 			unit.Condition = dao.ConvCondition(cell.String())
 		}
 
 		unit.Quantity = 1
-		cell, ok = row[parser.Quantity]
+		cell, ok = row[Quantity]
 		if ok {
 			unit.Quantity, err = cell.UInt32()
 			if err != nil {
@@ -253,7 +252,7 @@ func (e *Extractor) extractCollection() (list dao.UnitList, err error) {
 			}
 		}
 
-		cell, ok = row[parser.UnitPrice]
+		cell, ok = row[UnitPrice]
 		if ok {
 			unit.UnitCostInCent, err = cell.PriceInCent()
 			if err != nil {
@@ -261,9 +260,9 @@ func (e *Extractor) extractCollection() (list dao.UnitList, err error) {
 			}
 		} else {
 			switch intersect {
-			case parser.EAN:
+			case EAN:
 				unit.UnitCostInCent, ok = unitPriceByIntersect[unit.EAN]
-			case parser.SKU:
+			case SKU:
 				unit.UnitCostInCent, ok = unitPriceByIntersect[unit.SKU]
 			default:
 				err = fmt.Errorf("get the case without intersected header")
@@ -284,9 +283,9 @@ func (e *Extractor) extractCollection() (list dao.UnitList, err error) {
 	return
 }
 
-func getIntersectedHeader(headers parser.Headers) (intersect parser.Header, ok bool) {
+func getIntersectedHeader(headers Headers) (intersect Header, ok bool) {
 	for _, intersect = range headers {
-		if intersect == parser.SKU || intersect == parser.EAN {
+		if intersect == SKU || intersect == EAN {
 			ok = true
 
 			break

@@ -99,16 +99,16 @@ create table asin.origin
         constraint origin_list_asin_fk
             references asin.list
             on update cascade on delete cascade,
-    lang char(2)      not null,
+    country char(2)      not null,
     url  varchar(1024) not null
 );
 
-create unique index origin_asin_lang_uix
-    on asin.origin (asin, lang);
+create unique index origin_asin_country_uix
+    on asin.origin (asin, country);
 
 alter table asin.origin
     add constraint origin_pk
-        primary key (asin, lang);
+        primary key (asin, country);
 
 create index origin_asin_ix
     on asin.origin (asin);

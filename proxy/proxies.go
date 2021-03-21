@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/leprosus/golang-config"
 	"io/ioutil"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"sync"
 	"time"
 )
+
+var NonProxy = errors.New("non proxy")
 
 type Proxies struct {
 	mx    *sync.Mutex
@@ -41,7 +44,7 @@ func GetInstance() (p *Proxies, err error) {
 	defer mx.Unlock()
 
 	once.Do(func() {
-		path := config.Path("proxies_csv")
+		path := config.Path("proxies_path")
 
 		var list []string
 		list, err = LoadProxiesFromFile(path)

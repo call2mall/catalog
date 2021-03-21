@@ -1,21 +1,29 @@
-package translator
+package translate
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/call2mall/catalog/proxy"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
+
+type Translate struct {
+	timestamp time.Duration
+}
+
+func (t *Translate) Timestamp(timestamp time.Duration) {
+	t.timestamp = timestamp
+}
 
 type translateRes struct {
 	Result         string `json:"result"`
 	TranslatedText string `json:"translated_text"`
 }
 
-func Translate(text, from, to string, proxies *proxy.Proxies) (translation string, err error) {
+func (t Translate) Translate(text, from, to, proxyAddr string) (result string, err error) {
 	options := url.Values{}
 	options.Set("text_to_translate", text)
 	options.Set("source_lang", from)
@@ -23,7 +31,7 @@ func Translate(text, from, to string, proxies *proxy.Proxies) (translation strin
 	options.Set("use_cache_only", "false")
 
 	var bs []byte
-	bs, err = request("https://www.translate.com/translator/ajax_translate", options, proxies)
+	bs, err = t.request("https://www.translate.com/translator/ajax_translate", options, proxyAddr)
 	if err != nil {
 		return
 	}
@@ -40,7 +48,7 @@ func Translate(text, from, to string, proxies *proxy.Proxies) (translation strin
 		return
 	}
 
-	translation = answer.TranslatedText
+	result = answer.TranslatedText
 
 	return
 }
@@ -50,12 +58,12 @@ type detectionRes struct {
 	Language string `json:"language"`
 }
 
-func DetectLang(text string, proxies *proxy.Proxies) (lang string, err error) {
+func (t Translate) DetectLang(text, proxyAddr string) (lang string, err error) {
 	options := url.Values{}
 	options.Set("text_to_translate", text)
 
 	var bs []byte
-	bs, err = request("https://www.translate.com/translator/ajax_lang_auto_detect", options, proxies)
+	bs, err = t.request("https://www.translate.com/translator/ajax_lang_auto_detect", options, proxyAddr)
 	if err != nil {
 		return
 	}
@@ -77,7 +85,7 @@ func DetectLang(text string, proxies *proxy.Proxies) (lang string, err error) {
 	return
 }
 
-func request(rawUrl string, options url.Values, proxies *proxy.Proxies) (bs []byte, err error) {
+func (t Translate) request(rawUrl string, options url.Values, proxyAddr string) (bs []byte, err error) {
 	data := options.Encode()
 
 	var req *http.Request
@@ -86,7 +94,6 @@ func request(rawUrl string, options url.Values, proxies *proxy.Proxies) (bs []by
 		return
 	}
 
-	req.Header.Set("origin", "https://www.bing.com")
 	req.Header.Set("accept-language", "en-US,en;q=0.9,ru-RU;q=0.8,ru;q=0.7,de;q=0.6,lt;q=0.5,pl;q=0.4,zh-CN;q=0.3,zh;q=0.2")
 	req.Header.Set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36")
 	req.Header.Set("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
@@ -98,8 +105,11 @@ func request(rawUrl string, options url.Values, proxies *proxy.Proxies) (bs []by
 
 	client := http.Client{}
 
-	proxyAddr, ok := proxies.Next()
-	if ok {
+	if t.timestamp > 0 {
+		client.Timeout = t.timestamp
+	}
+
+	if len(proxyAddr) > 0 {
 		var proxyUrl *url.URL
 
 		proxyUrl, err = url.Parse(proxyAddr)

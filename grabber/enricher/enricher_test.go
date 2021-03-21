@@ -1,4 +1,4 @@
-package grabber
+package enricher
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ func TestExtractASINMeta(t *testing.T) {
 		asin       = dao.ASIN("B07K3SS94V")
 		originList dao.OriginList
 
-		features dao.ASINFeatures
+		features dao.ASINProps
 		ok       bool
 		err      error
 	)

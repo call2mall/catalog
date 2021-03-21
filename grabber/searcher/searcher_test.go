@@ -1,4 +1,4 @@
-package grabber
+package searcher
 
 import (
 	"github.com/call2mall/conn"

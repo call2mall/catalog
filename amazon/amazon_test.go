@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestExtractFeaturesByUrl(t *testing.T) {
+func TestAmazon_FindPages(t *testing.T) {
 	proxies := proxy.NewProxies([]string{
 		"http://emiles01:xVypbJnv@51.89.10.102:29842",
 		"http://emiles01:xVypbJnv@51.89.130.34:29842",
@@ -15,17 +15,30 @@ func TestExtractFeaturesByUrl(t *testing.T) {
 		"http://emiles01:xVypbJnv@51.89.131.103:29842",
 	})
 
-	features, ok, err := ExtractFeaturesByUrl("https://www.amazon.co.uk/Garmin-Instinct-Features-Monitoring-Lakeside/dp/B07PN8C9V2", proxies)
+	a := Amazon{}
+	urlList, err := a.FindPages("B07K3SS94V", proxies)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
-	if !ok {
-		t.Fatal("Can't extract features")
+	fmt.Println(urlList)
+}
+
+func TestAmazon_ExtractMeta(t *testing.T) {
+	proxies := proxy.NewProxies([]string{
+		"http://emiles01:xVypbJnv@51.89.10.102:29842",
+		"http://emiles01:xVypbJnv@51.89.130.34:29842",
+		"http://emiles01:xVypbJnv@51.83.17.111:29842",
+		"http://emiles01:xVypbJnv@51.89.31.32:29842",
+		"http://emiles01:xVypbJnv@51.89.131.103:29842",
+	})
+
+	a := Amazon{}
+
+	props, err := a.ExtractMeta("https://www.amazon.it/PLAY-Bang-Olufsen-Beoplay-H4/dp/B07B6NRC7X", proxies)
+	if err != nil {
+		t.Error(err)
 	}
 
-	fmt.Println(features.Url)
-	fmt.Println(features.Title)
-	fmt.Println(features.PhotoUrl)
-	fmt.Println(features.Category)
+	fmt.Println(props)
 }

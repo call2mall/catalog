@@ -1,4 +1,4 @@
-package grabber
+package enricher
 
 import (
 	"fmt"
@@ -6,11 +6,18 @@ import (
 	"github.com/call2mall/catalog/curl"
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/proxy"
-	"github.com/call2mall/catalog/translator"
+	translate2 "github.com/call2mall/catalog/translate/translate"
 	"github.com/leprosus/golang-log"
 	"github.com/pkg/errors"
+	"net/http"
 	"time"
 )
+
+var header = http.Header{}
+
+func init() {
+	header.Add("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36")
+}
 
 func RunEnrichASIN(threads uint) (err error) {
 	go runDefrostEnrichASIN()
@@ -83,7 +90,7 @@ func enrichByASIN(ch chan dao.ASIN, proxies *proxy.Proxies) {
 		ok bool
 
 		originList dao.OriginList
-		features   dao.ASINFeatures
+		features   dao.ASINProps
 	)
 
 	for asin := range ch {
@@ -150,10 +157,9 @@ func enrichByASIN(ch chan dao.ASIN, proxies *proxy.Proxies) {
 	}
 }
 
-func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Proxies) (features dao.ASINFeatures, ok bool, err error) {
+func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Proxies) (features dao.ASINProps, ok bool, err error) {
 	var (
-		lang     string
-		langList = []string{"en", "de", "it", "fr", "es", "nl", "sv", "ar", "jp"}
+		lang string
 
 		pageUrl string
 
@@ -161,7 +167,7 @@ func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *prox
 		image dao.Image
 	)
 
-	for _, lang = range langList {
+	for _, lang = range dao.CountryPriority() {
 		pageUrl, ok = originList[lang]
 		if !ok {
 			continue
@@ -195,7 +201,7 @@ func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *prox
 				continue
 			}
 
-			meta.Title, err = translator.Translate(meta.Title, lang, "en", proxies)
+			meta.Title, err = translate2.Translate(meta.Title, lang, "en", proxies)
 			if err != nil {
 				log.ErrorFmt("Can't translate title with ASIN `%s`: %v", asin, err)
 
@@ -208,7 +214,7 @@ func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *prox
 				continue
 			}
 
-			meta.Category.Name, err = translator.Translate(meta.Category.Name, lang, "en", proxies)
+			meta.Category.Name, err = translate2.Translate(meta.Category.Name, lang, "en", proxies)
 			if err != nil {
 				log.ErrorFmt("Can't translate category for ASIN `%s`: %s", asin, err.Error())
 

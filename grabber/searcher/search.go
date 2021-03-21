@@ -3,7 +3,7 @@ package searcher
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/call2mall/catalog/chrome"
+	"github.com/call2mall/catalog/browser"
 	"github.com/call2mall/catalog/proxy"
 	"github.com/leprosus/golang-log"
 	"net/url"
@@ -61,7 +61,7 @@ func SearchByASIN(asin string, proxies *proxy.Proxies) (urlList []string, err er
 
 func searchByUrl(urlData url.URL, proxies *proxy.Proxies) (resUrl string, ok bool, err error) {
 	var html string
-	html, err = chrome.GetHtml(urlData.String(), proxies)
+	html, err = browser.GetHtml(urlData.String(), proxies)
 	if err != nil {
 		return
 	}

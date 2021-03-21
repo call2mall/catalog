@@ -200,7 +200,7 @@ func (l ASINList) Diff(o ASINList) (d ASINList) {
 	return
 }
 
-type ASINFeatures struct {
+type ASINProps struct {
 	ASIN ASIN
 
 	Image Image
@@ -215,7 +215,7 @@ type ASINMeta struct {
 	ImageName string
 }
 
-func GetFeaturesByASIN(number string) (asin ASINFeatures, err error) {
+func GetPropsByASIN(asin ASIN) (props ASINProps, err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		query := `select l.category_id, c.name, coalesce(c.l8n, ''), l.title, l.l8n, i.bytes, i.hash 
 					from asin.list l 
@@ -228,8 +228,8 @@ func GetFeaturesByASIN(number string) (asin ASINFeatures, err error) {
 			catL8n, asinL8n sql.NullString
 			image           Image
 		)
-		err = tx.QueryRowx(query, number).Scan(&category.Id, &category.Name, &catL8n,
-			&asin.Title, &asinL8n, &image.Bytes, &asin.ImageName)
+		err = tx.QueryRowx(query, asin).Scan(&category.Id, &category.Name, &catL8n,
+			&props.Title, &asinL8n, &image.Bytes, &props.ImageName)
 		if err == sql.ErrNoRows {
 			err = nil
 
@@ -241,7 +241,7 @@ func GetFeaturesByASIN(number string) (asin ASINFeatures, err error) {
 		}
 
 		if asinL8n.Valid {
-			asin.Title = asinL8n.String
+			props.Title = asinL8n.String
 		}
 
 		return
@@ -250,7 +250,7 @@ func GetFeaturesByASIN(number string) (asin ASINFeatures, err error) {
 	return
 }
 
-func (af ASINFeatures) Store() (err error) {
+func (af ASINProps) Store() (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		var categoryId uint32
 		categoryId, err = af.Category.store(tx)

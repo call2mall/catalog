@@ -22,7 +22,7 @@
   "cache": {
     "path": "./cache"
   },
-  "proxies_csv": "proxies.csv",
+  "proxies_path": "proxies.csv",
   "imap": {
     "host": "imap.yandex.com",
     "port": 993,
