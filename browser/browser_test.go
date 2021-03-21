@@ -2,10 +2,11 @@ package browser
 
 import (
 	"fmt"
+	"io/ioutil"
 	"testing"
 )
 
-func TestLookupByUrl(t *testing.T) {
+func TestBrowser(t *testing.T) {
 	rawUrl := "https://www.amazon.de/review/product/B07Q3S8BKF"
 	b := NewBrowser()
 	err := b.Proxy("http://emiles01:xVypbJnv@51.89.130.34:29842")
@@ -20,4 +21,24 @@ func TestLookupByUrl(t *testing.T) {
 	}
 
 	fmt.Println(html)
+}
+
+func TestFullScreenshot(t *testing.T) {
+	rawUrl := "https://www.amazon.de/review/product/B07Q3S8BKF"
+	b := NewBrowser()
+	err := b.Proxy("http://emiles01:xVypbJnv@51.89.130.34:29842")
+	if err != nil {
+		t.Error(err)
+	}
+
+	var bs []byte
+	bs, err = b.MakeFullScreenshot(rawUrl, 100)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = ioutil.WriteFile("screenshot.png", bs, 0644)
+	if err != nil {
+		t.Error(err)
+	}
 }

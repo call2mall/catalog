@@ -3,10 +3,14 @@ package browser
 import (
 	"context"
 	"github.com/chromedp/cdproto/cdp"
+	"github.com/chromedp/cdproto/dom"
+	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/fetch"
 	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/leprosus/golang-log"
+	"math"
 	"net/url"
 	"time"
 )
@@ -163,4 +167,49 @@ func (b *Browser) GetHtml(rawUrl string) (html string, err error) {
 	})
 
 	return
+}
+
+func (b *Browser) MakeFullScreenshot(rawUrl string, quality int64) (bs []byte, err error) {
+	err = b.Run(rawUrl, FullScreenshot(quality, &bs))
+
+	return
+}
+
+func FullScreenshot(quality int64, bs *[]byte) chromedp.Tasks {
+	return chromedp.Tasks{
+		chromedp.ActionFunc(func(ctx context.Context) (err error) {
+			var contentSize *dom.Rect
+			_, _, contentSize, err = page.GetLayoutMetrics().Do(ctx)
+			if err != nil {
+				return err
+			}
+
+			width, height := int64(math.Ceil(contentSize.Width)), int64(math.Ceil(contentSize.Height))
+
+			err = emulation.SetDeviceMetricsOverride(width, height, 1, false).
+				WithScreenOrientation(&emulation.ScreenOrientation{
+					Type:  emulation.OrientationTypePortraitPrimary,
+					Angle: 0,
+				}).
+				Do(ctx)
+			if err != nil {
+				return
+			}
+
+			*bs, err = page.CaptureScreenshot().
+				WithQuality(quality).
+				WithClip(&page.Viewport{
+					X:      contentSize.X,
+					Y:      contentSize.Y,
+					Width:  contentSize.Width,
+					Height: contentSize.Height,
+					Scale:  1,
+				}).Do(ctx)
+			if err != nil {
+				return
+			}
+
+			return
+		}),
+	}
 }
