@@ -24,9 +24,7 @@ func (s Yahoo) Search(query string, b *browser.Browser) (urlList []string, err e
 
 	var html string
 	err = b.Run(queryUrl.String(), []chromedp.Action{
-		chromedp.WaitVisible("button.btn.primary"),
 		chromedp.Sleep(time.Second),
-		chromedp.Click("button.btn.primary"),
 		chromedp.WaitVisible("#web", chromedp.ByID),
 		chromedp.OuterHTML("html", &html),
 	})

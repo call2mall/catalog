@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"github.com/call2mall/catalog/browser"
 	"testing"
+	"time"
 )
 
 func TestBingSearch(t *testing.T) {
 	b := browser.NewBrowser()
-	err := b.Proxy("http://emiles01:xVypbJnv@51.89.130.34:29842")
-	if err != nil {
-		t.Error(err)
-	}
 
 	query := fmt.Sprintf("\"%s\"", "B07K3SS94V")
 
-	var list []string
+	var (
+		list []string
+		err  error
+	)
 	list, err = Bing{}.Search(query, b)
 	if err != nil {
 		t.Error(err)
@@ -26,4 +26,6 @@ func TestBingSearch(t *testing.T) {
 	}
 
 	fmt.Println(list)
+
+	time.Sleep(2 * time.Second)
 }

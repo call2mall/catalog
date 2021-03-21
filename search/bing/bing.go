@@ -24,9 +24,7 @@ func (s Bing) Search(query string, b *browser.Browser) (urlList []string, err er
 
 	var html string
 	err = b.Run(queryUrl.String(), []chromedp.Action{
-		chromedp.WaitVisible("#bnp_btn_accept", chromedp.ByID),
 		chromedp.Sleep(time.Second),
-		chromedp.Click("#bnp_btn_accept", chromedp.ByID),
 		chromedp.WaitVisible("#b_results", chromedp.ByID),
 		chromedp.OuterHTML("html", &html),
 	})

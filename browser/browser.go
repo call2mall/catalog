@@ -10,8 +10,12 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/leprosus/golang-log"
+	"github.com/pkg/errors"
+	"io/ioutil"
 	"math"
 	"net/url"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -27,6 +31,8 @@ type Browser struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	path string
 }
 
 func NewBrowser() (c *Browser) {
@@ -64,6 +70,20 @@ func (b *Browser) Timeout(timeout time.Duration) {
 
 func (b *Browser) Headless(isHeadless bool) {
 	b.isHeadless = isHeadless
+}
+
+func (b *Browser) LastScreenshot(path string) (err error) {
+	b.path, err = filepath.Abs(path)
+	if err != nil {
+		return
+	}
+
+	err = os.MkdirAll(b.path, 0755)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func (b *Browser) Cancel() {
@@ -147,6 +167,45 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 
 	var headers = map[string]interface{}{
 		"accept-language": "en-US,en;q=0.9,de;q=0.8,fr;q=0.7,it;q=0.6,es;q=0.5,nl;q=0.4,*;q=0.2",
+	}
+
+	if len(b.path) > 0 {
+		var bs []byte
+		defer func() {
+			if len(bs) == 0 {
+				return
+			}
+
+			file, e := ioutil.TempFile(b.path, "screenshot-*.png")
+			if e != nil {
+				err = errors.Wrap(err, e.Error())
+
+				return
+			}
+
+			_, e = file.Write(bs)
+			if e != nil {
+				err = errors.Wrap(err, e.Error())
+
+				return
+			}
+		}()
+
+		actions = append([]chromedp.Action{chromedp.ActionFunc(func(ctx context.Context) (err error) {
+			go func() {
+				for {
+					err = FullScreenshot(100, &bs).Do(ctx)
+					if err != nil {
+						return
+					}
+
+					println("HERE")
+					time.Sleep(100 * time.Millisecond)
+				}
+			}()
+
+			return
+		})}, actions...)
 	}
 
 	actions = append([]chromedp.Action{

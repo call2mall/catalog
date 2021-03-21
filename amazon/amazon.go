@@ -10,6 +10,9 @@ import (
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/proxy"
 	"github.com/call2mall/catalog/search"
+	"github.com/call2mall/catalog/search/lycos"
+	"github.com/call2mall/catalog/search/qwant"
+	"github.com/call2mall/catalog/search/swisscows"
 	"github.com/call2mall/catalog/translate"
 	"github.com/chromedp/chromedp"
 	"net/http"
@@ -23,6 +26,11 @@ type Amazon struct{}
 
 func (a Amazon) FindPages(asin dao.ASIN, proxies *proxy.Proxies) (urlList []string, err error) {
 	s := search.NewSearch(proxies)
+	s.SearcherList([]search.Searcher{
+		lycos.Lycos{},
+		qwant.Qwant{},
+		swisscows.SwissCows{},
+	})
 
 	var (
 		domainsRegExp = regexp.MustCompile("^(www\\.)?amazon\\.(co\\.uk|com\\.au|co\\.jp|ae|de|it|fr|es|nl|se|sg)$")
