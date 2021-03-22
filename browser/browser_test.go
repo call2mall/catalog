@@ -3,6 +3,7 @@ package browser
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -32,6 +33,10 @@ func TestFullScreenshot(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	defer func() {
+		_ = os.RemoveAll("screenshot.png")
+	}()
 
 	var bs []byte
 	bs, err = b.MakeFullScreenshot(rawUrl, 100)
