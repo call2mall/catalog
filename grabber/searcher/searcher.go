@@ -97,6 +97,8 @@ func searchOrigins(ch chan dao.ASIN, proxies *proxy.Proxies) {
 				}
 			}()
 
+			log.DebugFmt("It is searching page for ASIN `%s`", asin)
+
 			urlList, err = a.FindPages(asin, proxies)
 			if err != nil {
 				log.WarnFmt("Can't find origin amazon pages for ASIN `%s`: %v", asin, err)
