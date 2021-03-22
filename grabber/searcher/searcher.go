@@ -121,7 +121,7 @@ func searchOrigins(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			err = originalList.Store(asin)
 			if err != nil {
-				log.CriticalFmt("Can't store found amazon pages for ASIN `%s`: %s", asin, err.Error())
+				log.CriticalFmt("Can't store found amazon pages for ASIN `%s`: %v", asin, err)
 
 				return
 			}
@@ -130,14 +130,14 @@ func searchOrigins(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			err = asin.MarkSearchAs(dao.Done)
 			if err != nil {
-				log.ErrorFmt("Can't set status as `done` of searcher queue task for ASIN `%s`: %s", asin, err.Error())
+				log.ErrorFmt("Can't set status as `done` of searcher queue task for ASIN `%s`: %v", asin, err)
 
 				return
 			}
 
 			err = asin.PushToEnricherQueue()
 			if err != nil {
-				log.ErrorFmt("Can't push ASIN `%s` to queue to enrich meta-data: %s", asin, err.Error())
+				log.ErrorFmt("Can't push ASIN `%s` to queue to enrich meta-data: %v", asin, err)
 
 				return
 			}

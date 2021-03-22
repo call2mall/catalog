@@ -124,7 +124,7 @@ func enrichProps(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 				props, err = a.ExtractProps(pageUrl, proxies)
 				if err != nil {
-					log.ErrorFmt("Can't extract meta-data for ASIN `%s`: %s", asin, err.Error())
+					log.ErrorFmt("Can't extract meta-data for ASIN `%s`: %v", asin, err)
 
 					continue
 				}
@@ -142,7 +142,7 @@ func enrichProps(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			err = props.Store()
 			if err != nil {
-				log.CriticalFmt("Can't store found ASIN props for ASIN `%s`: %s", asin, err.Error())
+				log.CriticalFmt("Can't store found ASIN props for ASIN `%s`: %v", asin, err)
 
 				return
 			}
@@ -151,14 +151,14 @@ func enrichProps(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			err = asin.MarkEnrichAs(dao.Done)
 			if err != nil {
-				log.ErrorFmt("Can't set status as `done` of enricher queue task for ASIN `%s`: %s", asin, err.Error())
+				log.ErrorFmt("Can't set status as `done` of enricher queue task for ASIN `%s`: %v", asin, err)
 
 				return
 			}
 
 			err = asin.PushToPublisherQueue()
 			if err != nil {
-				log.ErrorFmt("Can't push ASIN `%s` to queue to publish its: %s", asin, err.Error())
+				log.ErrorFmt("Can't push ASIN `%s` to queue to publish its: %v", asin, err)
 
 				return
 			}

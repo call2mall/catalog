@@ -246,7 +246,7 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 	})
 
 	if isAutomationDetected {
-		err = DetectedAutomation
+		err = fmt.Errorf("amazon web-site `%s` responses: %v", urlData.Host, DetectedAutomation)
 
 		return
 	}

@@ -29,7 +29,7 @@ func ExtractData(dirPath string) (list dao.UnitList, err error) {
 
 			skuPart, err = ex.Extract()
 			if err != nil {
-				log.WarnFmt("Can't extract data from `%s` file `%s`: %s", filePath, fileName, err.Error())
+				log.WarnFmt("Can't extract data from `%s` file `%s`: %v", filePath, fileName, err)
 
 				err = nil
 
