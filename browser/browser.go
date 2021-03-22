@@ -167,7 +167,7 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 			}
 
 			if err != nil {
-				log.ErrorFmt("During `$s` it catch: %s (current proxy is `%s`)", evType, err.Error(), b.proxyAddr)
+				log.ErrorFmt("During `%s` it catch: %s (current proxy is `%s`)", evType, err.Error(), b.proxyAddr)
 			}
 		}()
 	})
