@@ -172,7 +172,7 @@ func extractOriginFromProductReport(urlData *url.URL, b *browser.Browser) (resUr
 	return
 }
 
-const DefaultCategory = "Sellout"
+const DefaultCategory = "Out of category"
 
 var (
 	NoProductCategory  = errors.New("there isn't product category")
