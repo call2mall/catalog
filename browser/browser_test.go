@@ -27,6 +27,7 @@ func TestBrowser(t *testing.T) {
 func TestFullScreenshot(t *testing.T) {
 	rawUrl := "https://www.amazon.de/review/product/B07Q3S8BKF"
 	b := NewBrowser()
+	b.Headless(false)
 	err := b.Proxy("http://emiles01:xVypbJnv@51.89.130.34:29842")
 	if err != nil {
 		t.Error(err)

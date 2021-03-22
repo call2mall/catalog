@@ -163,6 +163,7 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 
 	var headers = map[string]interface{}{
 		"accept-language": "en-US,en;q=0.9,de;q=0.8,fr;q=0.7,it;q=0.6,es;q=0.5,nl;q=0.4,*;q=0.2",
+		"user-agent":      "Mozilla/5.0 (compatible; WeViKaBot/1.0)",
 	}
 
 	if len(b.path) > 0 {
