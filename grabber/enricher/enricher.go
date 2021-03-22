@@ -147,6 +147,8 @@ func enrichProps(ch chan dao.ASIN, proxies *proxy.Proxies) {
 				return
 			}
 
+			success = true
+
 			err = asin.MarkEnrichAs(dao.Done)
 			if err != nil {
 				log.ErrorFmt("Can't set status as `done` of enricher queue task for ASIN `%s`: %s", asin, err.Error())
