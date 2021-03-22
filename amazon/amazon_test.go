@@ -25,7 +25,7 @@ func TestAmazon_FindPages(t *testing.T) {
 	fmt.Println(urlList)
 }
 
-func TestAmazon_ExtractMeta(t *testing.T) {
+func TestAmazon_ExtractProps(t *testing.T) {
 	proxies := proxy.NewProxies([]string{
 		"http://emiles01:xVypbJnv@51.89.10.102:29842",
 		"http://emiles01:xVypbJnv@51.89.130.34:29842",
@@ -36,7 +36,7 @@ func TestAmazon_ExtractMeta(t *testing.T) {
 
 	a := Amazon{}
 
-	props, err := a.ExtractMeta("https://www.amazon.it/PLAY-Bang-Olufsen-Beoplay-H4/dp/B07B6NRC7X", proxies)
+	props, err := a.ExtractProps("https://www.amazon.it/PLAY-Bang-Olufsen-Beoplay-H4/dp/B07B6NRC7X", proxies)
 	if err != nil {
 		t.Error(err)
 	}

@@ -179,7 +179,7 @@ var (
 	DetectedAutomation = errors.New("detected automation")
 )
 
-func (a Amazon) ExtractMeta(amazonUrl string, proxies *proxy.Proxies) (props dao.ASINProps, err error) {
+func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props dao.ASINProps, err error) {
 	var (
 		l8n           string
 		withL8nSwitch bool

@@ -1,7 +1,6 @@
 package searcher
 
 import (
-	"fmt"
 	"github.com/call2mall/catalog/amazon"
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/proxy"
@@ -10,7 +9,7 @@ import (
 	"time"
 )
 
-func RunSearchASIN(threads uint) (err error) {
+func RunSearcher(threads uint) (err error) {
 	go defrostQueue()
 
 	var ch chan dao.ASIN
@@ -48,7 +47,7 @@ func defrostQueue() {
 
 	var err error
 	for range time.NewTicker(time.Minute).C {
-		err = dao.DefrostSearchASIN(minute)
+		err = dao.DefrostSearchQueue(minute)
 		if err != nil {
 			log.CriticalFmt("Can't defrost ASIN from search queue: %v", err)
 
@@ -100,9 +99,7 @@ func searchOrigins(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			urlList, err = a.FindPages(asin, proxies)
 			if err != nil {
-				err = fmt.Errorf("can't find origin amazon pages for ASIN `%s`: %v", asin, err)
-
-				log.Warn(err.Error())
+				log.WarnFmt("Can't find origin amazon pages for ASIN `%s`: %v", asin, err)
 
 				return
 			}
@@ -115,18 +112,14 @@ func searchOrigins(ch chan dao.ASIN, proxies *proxy.Proxies) {
 			}
 
 			if len(originalList) == 0 {
-				err = fmt.Errorf("found zero amazon pages for ASIN `%s`", asin)
-
-				log.Warn(err.Error())
+				log.WarnFmt("Found zero amazon pages for ASIN `%s`", asin)
 
 				return
 			}
 
 			err = originalList.Store(asin)
 			if err != nil {
-				err = fmt.Errorf("can't store found amazon pages for ASIN `%s`: %s", asin, err.Error())
-
-				log.Critical(err.Error())
+				log.CriticalFmt("Can't store found amazon pages for ASIN `%s`: %s", asin, err.Error())
 
 				return
 			}
@@ -135,18 +128,14 @@ func searchOrigins(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			err = asin.MarkSearchAs(dao.Done)
 			if err != nil {
-				err = fmt.Errorf("can't set status as `done` of searcher queue task for ASIN `%s`: %s", asin, err.Error())
-
-				log.Error(err.Error())
+				log.ErrorFmt("Can't set status as `done` of searcher queue task for ASIN `%s`: %s", asin, err.Error())
 
 				return
 			}
 
 			err = asin.PushToEnricherQueue()
 			if err != nil {
-				err = fmt.Errorf("can't push ASIN `%s` to queue to enrich meta-data: %s", asin, err.Error())
-
-				log.Error(err.Error())
+				log.ErrorFmt("Can't push ASIN `%s` to queue to enrich meta-data: %s", asin, err.Error())
 
 				return
 			}

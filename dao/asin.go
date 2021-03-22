@@ -114,7 +114,7 @@ func PopASINToSearch(limit uint) (list ASINList, err error) {
 	return
 }
 
-func DefrostSearchASIN(duration uint32) (err error) {
+func DefrostSearchQueue(duration uint32) (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		err = defrostTasks(tx, "asin.searcher_queue", duration)
 
@@ -142,7 +142,7 @@ func PopASINToEnrich(limit uint) (list ASINList, err error) {
 	return
 }
 
-func DefrostEnrichASIN(duration uint32) (err error) {
+func DefrostEnrichQueue(duration uint32) (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		err = defrostTasks(tx, "asin.enricher_queue", duration)
 

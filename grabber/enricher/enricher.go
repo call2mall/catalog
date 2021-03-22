@@ -1,12 +1,9 @@
 package enricher
 
 import (
-	"fmt"
 	"github.com/call2mall/catalog/amazon"
-	"github.com/call2mall/catalog/curl"
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/proxy"
-	translate2 "github.com/call2mall/catalog/translate/translate"
 	"github.com/leprosus/golang-log"
 	"github.com/pkg/errors"
 	"net/http"
@@ -19,11 +16,11 @@ func init() {
 	header.Add("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36")
 }
 
-func RunEnrichASIN(threads uint) (err error) {
-	go runDefrostEnrichASIN()
+func RunEnricher(threads uint) (err error) {
+	go defrostQueue()
 
 	var ch chan dao.ASIN
-	ch, err = runEnrichASINThreads(threads)
+	ch, err = runThreads(threads)
 	if err != nil {
 		return
 	}
@@ -52,12 +49,12 @@ func RunEnrichASIN(threads uint) (err error) {
 	}
 }
 
-func runDefrostEnrichASIN() {
+func defrostQueue() {
 	const minute = 60
 
 	var err error
 	for range time.NewTicker(time.Minute).C {
-		err = dao.DefrostEnrichASIN(minute)
+		err = dao.DefrostEnrichQueue(minute)
 		if err != nil {
 			log.CriticalFmt("Can't defrost ASIN from enrich queue: %v", err)
 
@@ -66,7 +63,7 @@ func runDefrostEnrichASIN() {
 	}
 }
 
-func runEnrichASINThreads(threads uint) (ch chan dao.ASIN, err error) {
+func runThreads(threads uint) (ch chan dao.ASIN, err error) {
 	ch = make(chan dao.ASIN, threads)
 
 	var proxies *proxy.Proxies
@@ -77,202 +74,94 @@ func runEnrichASINThreads(threads uint) (ch chan dao.ASIN, err error) {
 
 	var i uint
 	for i = 0; i < threads; i++ {
-		go enrichByASIN(ch, proxies)
+		go enrichProps(ch, proxies)
 	}
 
 	return
 }
 
-func enrichByASIN(ch chan dao.ASIN, proxies *proxy.Proxies) {
+func enrichProps(ch chan dao.ASIN, proxies *proxy.Proxies) {
 	var (
 		err error
 
-		ok bool
+		lang string
 
+		pageUrl    string
+		ok         bool
 		originList dao.OriginList
-		features   dao.ASINProps
+
+		a     amazon.Amazon
+		props dao.ASINProps
 	)
 
 	for asin := range ch {
-		log.DebugFmt("It is enriching data for ASIN `%s`", asin)
+		func() {
+			var success = false
 
-		originList, err = asin.LoadOrigins()
-		if err != nil {
-			return
-		}
+			defer func() {
+				if !success {
+					e := asin.MarkEnrichAs(dao.Fail)
+					if e != nil {
+						err = errors.Wrap(err, e.Error())
 
-		features, ok, err = extractASINFeatures(asin, originList, proxies)
-		if err != nil {
-			err = fmt.Errorf("can't extract meta-data for ASIN `%s`: %s", asin, err.Error())
+						log.Warn(err.Error())
+					}
+				}
+			}()
 
-			log.Error(err.Error())
+			log.DebugFmt("It is enriching data for ASIN `%s`", asin)
 
-			continue
-		}
-
-		if !ok {
-			err = asin.MarkEnrichAs(dao.Fail)
+			originList, err = asin.LoadOrigins()
 			if err != nil {
-				err = fmt.Errorf("can't set status as `fail` of enricher queue task for ASIN `%s`: %s", asin, err.Error())
-
-				log.Error(err.Error())
-
-				continue
-			}
-		}
-
-		err = features.Store()
-		if err != nil {
-			err = fmt.Errorf("can't store found ASIN features for ASIN `%s`: %s", asin, err.Error())
-
-			e := asin.MarkEnrichAs(dao.Fail)
-			if e != nil {
-				err = errors.Wrap(err, e.Error())
+				return
 			}
 
-			log.Critical(err.Error())
+			for _, lang = range dao.CountryPriority() {
+				pageUrl, ok = originList[lang]
+				if !ok {
+					continue
+				}
 
-			continue
-		}
+				props, err = a.ExtractProps(pageUrl, proxies)
+				if err != nil {
+					log.ErrorFmt("Can't extract meta-data for ASIN `%s`: %s", asin, err.Error())
 
-		err = asin.MarkEnrichAs(dao.Done)
-		if err != nil {
-			err = fmt.Errorf("can't set status as `done` of enricher queue task for ASIN `%s`: %s", asin, err.Error())
+					continue
+				}
 
-			log.Error(err.Error())
-
-			continue
-		}
-
-		err = asin.PushToPublisherQueue()
-		if err != nil {
-			err = fmt.Errorf("can't push ASIN `%s` to queue to publish its: %s", asin, err.Error())
-
-			log.Error(err.Error())
-
-			continue
-		}
-
-		log.DebugFmt("Meta-data for ASIN `%s` is found", asin)
-	}
-}
-
-func extractASINFeatures(asin dao.ASIN, originList dao.OriginList, proxies *proxy.Proxies) (features dao.ASINProps, ok bool, err error) {
-	var (
-		lang string
-
-		pageUrl string
-
-		meta  dao.ASINMeta
-		image dao.Image
-	)
-
-	for _, lang = range dao.CountryPriority() {
-		pageUrl, ok = originList[lang]
-		if !ok {
-			continue
-		}
-
-		meta, image, ok, err = extractASINMeta(pageUrl, proxies)
-		if err != nil {
-			log.DebugFmt("Can't enrich ASIN by page `%s`: %v", pageUrl, err)
-
-			continue
-		}
-
-		if !ok {
-			log.DebugFmt("Can't extract necessary features for ASIN `%s` by url `%s`", asin, pageUrl)
-
-			continue
-		}
-
-		ok = false
-
-		if lang != "en" {
-			if len(meta.Title) == 0 {
-				log.WarnFmt("Get features with empty title for ASIN `%s` by url `%s`", asin, pageUrl)
-
-				continue
+				if len(props.Image.Bytes) > 0 {
+					break
+				}
 			}
 
-			if len(meta.Category.Name) == 0 {
-				log.WarnFmt("Get features with empty category name for ASIN `%s` by url `%s`", asin, pageUrl)
+			if len(props.Image.Bytes) == 0 {
+				log.WarnFmt("Can't extract meta-data for ASIN `%s` because nowhere is necessary data", asin)
 
-				continue
+				return
 			}
 
-			meta.Title, err = translate2.Translate(meta.Title, lang, "en", proxies)
+			err = props.Store()
 			if err != nil {
-				log.ErrorFmt("Can't translate title with ASIN `%s`: %v", asin, err)
+				log.CriticalFmt("Can't store found ASIN props for ASIN `%s`: %s", asin, err.Error())
 
-				continue
+				return
 			}
 
-			if len(meta.Title) == 0 {
-				log.WarnFmt("Get translated empty title for ASIN `%s` by url `%s`", asin, pageUrl)
-
-				continue
-			}
-
-			meta.Category.Name, err = translate2.Translate(meta.Category.Name, lang, "en", proxies)
+			err = asin.MarkEnrichAs(dao.Done)
 			if err != nil {
-				log.ErrorFmt("Can't translate category for ASIN `%s`: %s", asin, err.Error())
+				log.ErrorFmt("Can't set status as `done` of enricher queue task for ASIN `%s`: %s", asin, err.Error())
 
-				continue
+				return
 			}
 
-			if len(meta.Category.Name) == 0 {
-				log.WarnFmt("Get translated empty category name for ASIN `%s` by url `%s`", asin, pageUrl)
+			err = asin.PushToPublisherQueue()
+			if err != nil {
+				log.ErrorFmt("Can't push ASIN `%s` to queue to publish its: %s", asin, err.Error())
 
-				continue
+				return
 			}
-		}
 
-		features.ASIN = asin
-		features.Image = image
-		features.ASINMeta = meta
-
-		ok = true
-
-		return
+			log.DebugFmt("Meta-data for ASIN `%s` is found", asin)
+		}()
 	}
-
-	return
-}
-
-func extractASINMeta(pageUrl string, proxies *proxy.Proxies) (meta dao.ASINMeta, image dao.Image, ok bool, err error) {
-	var features amazon.Features
-	features, ok, err = amazon.ExtractFeaturesByUrl(pageUrl, proxies)
-	if err != nil {
-		err = fmt.Errorf("can't find amazon page for ASIN: %v", err)
-
-		return
-	}
-
-	if !ok {
-		return
-	}
-
-	if len(features.Category) == 0 || len(features.Title) == 0 {
-		ok = false
-
-		return
-	}
-
-	meta.Category.Name = features.Category
-	meta.Title = features.Title
-
-	var state uint
-	image.Bytes, state, err = curl.LoadByUrl(features.PhotoUrl, header, proxies)
-	if err != nil {
-		err = fmt.Errorf("can't load image from `%s`: %v", pageUrl, err)
-
-		return
-	} else if state != 200 {
-		err = fmt.Errorf("can't load image from `%s` because the server returned unexpected state", pageUrl)
-
-		return
-	}
-
-	return
 }
