@@ -172,6 +172,8 @@ func extractOriginFromProductReport(urlData *url.URL, b *browser.Browser) (resUr
 	return
 }
 
+const DefaultCategory = "Sellout"
+
 var (
 	NoProductCategory  = errors.New("there isn't product category")
 	NoProductTitle     = errors.New("there isn't product title")
@@ -289,12 +291,8 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 	props.Category.Name = doc.Find("#wayfinding-breadcrumbs_feature_div ul li:first-of-type a").First().Text()
 	props.Category.Name = strings.TrimSpace(props.Category.Name)
 	if len(props.Category.Name) == 0 {
-		err = NoProductCategory
-
-		return
-	}
-
-	if withTranslate {
+		props.Category.Name = DefaultCategory
+	} else if withTranslate {
 		tr := translate.NewTranslate(proxies)
 		props.Category.Name, err = tr.Translate(props.Category.Name, l8n, "en")
 		if err != nil {
