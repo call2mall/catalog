@@ -135,15 +135,10 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 
 	chromedp.ListenTarget(b.ctx, func(ev interface{}) {
 		go func() {
-			var (
-				err    error
-				evType string
-			)
+			var err error
 
 			switch ev := ev.(type) {
 			case *fetch.EventAuthRequired:
-				evType = "EventAuthRequired"
-
 				if b.withProxy {
 					execCtx := cdp.WithExecutor(b.ctx, chromedp.FromContext(b.ctx).Target)
 
@@ -159,15 +154,9 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 					}
 				}
 			case *fetch.EventRequestPaused:
-				evType = "EventRequestPaused"
-
 				execCtx := cdp.WithExecutor(b.ctx, chromedp.FromContext(b.ctx).Target)
 
-				err = fetch.ContinueRequest(ev.RequestID).Do(execCtx)
-			}
-
-			if err != nil {
-				log.ErrorFmt("During `%s` it catch: %s (current proxy is `%s`)", evType, err.Error(), b.proxyAddr)
+				_ = fetch.ContinueRequest(ev.RequestID).Do(execCtx)
 			}
 		}()
 	})
