@@ -241,9 +241,7 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 
 			return
 		}),
-		chromedp.WaitVisible("#sp-cc-accept", chromedp.ByID),
 		chromedp.Sleep(time.Second),
-		chromedp.Click("#sp-cc-accept", chromedp.ByID),
 		chromedp.OuterHTML("html", &html),
 	})
 

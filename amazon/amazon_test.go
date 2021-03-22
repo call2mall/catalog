@@ -36,7 +36,7 @@ func TestAmazon_ExtractProps(t *testing.T) {
 
 	a := Amazon{}
 
-	props, err := a.ExtractProps("https://www.amazon.it/PLAY-Bang-Olufsen-Beoplay-H4/dp/B07B6NRC7X", proxies)
+	props, err := a.ExtractProps("https://www.amazon.sg/Winmau-Pro-SFB-Bristle-Dartboard/dp/B00130OHI2", proxies)
 	if err != nil {
 		t.Error(err)
 	}

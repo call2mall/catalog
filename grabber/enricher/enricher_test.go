@@ -15,7 +15,7 @@ func init() {
 }
 
 func TestEnricher(t *testing.T) {
-	threads := config.UInt32("threads.searcher")
+	threads := config.UInt32("threads.enricher")
 
 	err := RunEnricher(uint(threads))
 	if err != nil {
