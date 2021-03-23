@@ -295,6 +295,7 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 
 	props.Category.Name = doc.Find("#wayfinding-breadcrumbs_feature_div ul li:first-of-type a").First().Text()
 	props.Category.Name = strings.TrimSpace(props.Category.Name)
+	props.Category.Name = strings.ReplaceAll(props.Category.Name, "&amp;", "and")
 	if len(props.Category.Name) == 0 {
 		props.Category.Name = DefaultCategory
 	} else if withTranslate {
@@ -309,6 +310,10 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 
 			return
 		}
+	}
+
+	if len(props.Category.Name) > 1 {
+		props.Category.Name = strings.ToUpper(props.Category.Name[0:1]) + props.Category.Name[1:]
 	}
 
 	var photoUrl string
