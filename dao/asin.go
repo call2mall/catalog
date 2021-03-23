@@ -258,27 +258,23 @@ type ASINMeta struct {
 
 func GetPropsByASIN(asin ASIN) (props ASINProps, err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
-		query := `select l.category_id, c.name, coalesce(c.l8n, ''), l.title, l.l8n, i.bytes, i.hash 
+		query := `select l.category_id, c.name, l.title, l.l8n, i.bytes, i.hash 
 					from asin.list l 
 					join asin.image i on l.image_hash = i.hash
 					join asin.category c on l.category_id = c.id
 					where l.asin = $1;`
 
 		var (
-			category        Category
-			catL8n, asinL8n sql.NullString
-			image           Image
+			category Category
+			asinL8n  sql.NullString
+			image    Image
 		)
-		err = tx.QueryRowx(query, asin).Scan(&category.Id, &category.Name, &catL8n,
+		err = tx.QueryRowx(query, asin).Scan(&category.Id, &category.Name,
 			&props.Title, &asinL8n, &image.Bytes, &props.ImageName)
 		if err == sql.ErrNoRows {
 			err = nil
 
 			return
-		}
-
-		if catL8n.Valid {
-			category.L8n = catL8n.String
 		}
 
 		if asinL8n.Valid {
