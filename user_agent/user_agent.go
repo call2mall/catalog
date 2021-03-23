@@ -26,7 +26,7 @@ func GetAllUserAgentList() (list []UserAgent) {
 		bing.BingBot{},
 		yahoo.YahooBot{},
 		baidu.BaiduBot{},
-		sogou.SogouBot{},
+		sogou.NewSogouBot(),
 		yandex.YandexBot{},
 		exabot.NewExaBot(),
 		facebook.NewFacebookBot(),
