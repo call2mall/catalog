@@ -10,7 +10,6 @@ import (
 type Category struct {
 	Id   uint32
 	Name string
-	L8n  string
 }
 
 func (c *Category) Store() (id uint32, err error) {
@@ -31,12 +30,9 @@ func (c *Category) store(tx *sqlx.Tx) (id uint32, err error) {
 	}
 
 	if c.Id > 0 {
-		upd := `update asin.category set name = $2, l8n = $3 where id = $1;`
+		upd := `update asin.category set name = $2 where id = $1;`
 
-		_, err = tx.Exec(upd, c.Id, c.Name, sql.NullString{
-			String: c.L8n,
-			Valid:  len(c.L8n) > 0,
-		})
+		_, err = tx.Exec(upd, c.Id, c.Name)
 		if err != nil {
 			return
 		}
@@ -45,12 +41,9 @@ func (c *Category) store(tx *sqlx.Tx) (id uint32, err error) {
 
 		err = tx.QueryRowx(sel, c.Name).Scan(&id)
 		if err == sql.ErrNoRows {
-			ins := `insert into asin.category (name, l8n) values ($1, $2) returning id;`
+			ins := `insert into asin.category (name) values ($1) returning id;`
 
-			err = tx.QueryRow(ins, c.Name, sql.NullString{
-				String: c.L8n,
-				Valid:  len(c.L8n) > 0,
-			}).Scan(&id)
+			err = tx.QueryRow(ins, c.Name).Scan(&id)
 			if err != nil {
 				return
 			}

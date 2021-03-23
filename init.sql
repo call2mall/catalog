@@ -40,7 +40,7 @@ $$
     end
 $$;
 
-create table if not exists catalog.grabber
+create table if not exists asin.grabber
 (
     uid       int  not null
         constraint grabber_pk
@@ -50,7 +50,7 @@ create table if not exists catalog.grabber
 );
 
 create unique index if not exists grabber_url_uix
-    on catalog.grabber (url);
+    on asin.grabber (url);
 
 create table if not exists asin.image
 (

@@ -8,7 +8,7 @@ import (
 
 func InsertWetransferUrl(uid uint32, rawUrl string) (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
-		query := `insert into catalog.grabber (uid, url) values ($1, $2) on conflict (url) do nothing;`
+		query := `insert into asin.grabber (uid, url) values ($1, $2) on conflict (url) do nothing;`
 
 		_, err = tx.Exec(query, uid, rawUrl)
 
@@ -20,7 +20,7 @@ func InsertWetransferUrl(uid uint32, rawUrl string) (err error) {
 
 func GetLastEmailUID() (uid uint32, err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
-		query := `select max(uid) from catalog.grabber;`
+		query := `select max(uid) from asin.grabber;`
 
 		var nullUID sql.NullInt64
 		err = tx.QueryRowx(query).Scan(&nullUID)
@@ -37,7 +37,7 @@ func GetLastEmailUID() (uid uint32, err error) {
 
 func IsProcessedWetransferUrl(rawUrl string) (ok bool, err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
-		query := `select count(g.uid) from catalog.grabber g where g.url = $1;`
+		query := `select count(g.uid) from asin.grabber g where g.url = $1;`
 
 		var count uint
 		err = tx.QueryRowx(query, rawUrl).Scan(&count)
