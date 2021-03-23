@@ -6,6 +6,7 @@ import (
 	"github.com/call2mall/catalog/proxy"
 	"github.com/call2mall/catalog/search/bing"
 	"github.com/call2mall/catalog/search/duckduckgo"
+	"github.com/call2mall/catalog/search/google"
 	"github.com/call2mall/catalog/search/lycos"
 	"github.com/call2mall/catalog/search/qwant"
 	"github.com/call2mall/catalog/search/swisscows"
@@ -26,6 +27,7 @@ func GetAllSearcherList() (list []Searcher) {
 		qwant.Qwant{},
 		swisscows.SwissCows{},
 		yahoo.Yahoo{},
+		google.Google{},
 	}
 }
 
