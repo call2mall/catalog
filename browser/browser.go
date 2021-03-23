@@ -2,8 +2,6 @@ package browser
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/emulation"
@@ -15,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"math"
-	"math/rand"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -36,6 +33,8 @@ type Browser struct {
 	cancel context.CancelFunc
 
 	path string
+
+	userAgent string
 }
 
 func NewBrowser() (c *Browser) {
@@ -65,6 +64,10 @@ func (b *Browser) Proxy(proxyAddr string) (err error) {
 	b.proxyPass, _ = userInfo.Password()
 
 	return
+}
+
+func (b *Browser) UserAgent(userAgent string) {
+	b.userAgent = userAgent
 }
 
 func (b *Browser) Timeout(timeout time.Duration) {
@@ -164,15 +167,12 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 		}()
 	})
 
-	bytes := make([]byte, 10)
-	for i := 0; i < 10; i++ {
-		bytes[i] = byte(rand.Intn(99))
-	}
-	uniq := fmt.Sprintf("%x", sha256.Sum256(bytes))[0:16]
-
 	var headers = map[string]interface{}{
 		"accept-language": "en-US,en;q=0.9,de;q=0.8,fr;q=0.7,it;q=0.6,es;q=0.5,nl;q=0.4,*;q=0.2",
-		"user-agent":      fmt.Sprintf("Mozilla/5.0 (compatible; WeViKaBot/1.0; +%s)", uniq),
+	}
+
+	if len(b.userAgent) > 0 {
+		headers["user-agent"] = b.userAgent
 	}
 
 	if len(b.path) > 0 {

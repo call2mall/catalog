@@ -14,6 +14,7 @@ import (
 	"github.com/call2mall/catalog/search/qwant"
 	"github.com/call2mall/catalog/search/swisscows"
 	"github.com/call2mall/catalog/translate"
+	"github.com/call2mall/catalog/user_agent"
 	"github.com/chromedp/chromedp"
 	"net/http"
 	"net/url"
@@ -217,6 +218,12 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 	err = b.Proxy(proxyAddr)
 	if err != nil {
 		return
+	}
+
+	var ua user_agent.UserAgent
+	ua, ok = user_agent.GetInstance().Next()
+	if ok {
+		b.UserAgent(ua.Header())
 	}
 
 	var (
