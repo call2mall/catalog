@@ -78,7 +78,7 @@ func GrabUnits() (err error) {
 		return
 	}
 
-	err = asinList.PushToSearchQueue()
+	err = asinList.PushToSearcher()
 	if err != nil {
 		return
 	}

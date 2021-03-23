@@ -8,7 +8,7 @@ import (
 
 type ASIN string
 
-func (a ASIN) MarkSearchAs(state QueueState) (err error) {
+func (a ASIN) MarkSearcherAs(state QueueState) (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		task := NewQueueTask("asin.searcher_queue", "asin", a)
 		task.State = state
@@ -21,7 +21,7 @@ func (a ASIN) MarkSearchAs(state QueueState) (err error) {
 	return
 }
 
-func (a ASIN) MarkEnrichAs(state QueueState) (err error) {
+func (a ASIN) MarkEnricherAs(state QueueState) (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		task := NewQueueTask("asin.enricher_queue", "asin", a)
 		task.State = state
@@ -34,7 +34,20 @@ func (a ASIN) MarkEnrichAs(state QueueState) (err error) {
 	return
 }
 
-func (a ASIN) PushToEnricherQueue() (err error) {
+func (a ASIN) MarkPublisherAs(state QueueState) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
+		task := NewQueueTask("asin.publisher_queue", "asin", a)
+		task.State = state
+
+		err = markTaskAs(tx, task)
+
+		return
+	})
+
+	return
+}
+
+func (a ASIN) PushToEnricher() (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		task := NewQueueTask("asin.enricher_queue", "asin", a)
 
@@ -46,7 +59,7 @@ func (a ASIN) PushToEnricherQueue() (err error) {
 	return
 }
 
-func (a ASIN) PushToPublisherQueue() (err error) {
+func (a ASIN) PushToPublisher() (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		task := NewQueueTask("asin.publisher_queue", "asin", a)
 
@@ -77,7 +90,7 @@ func (l ASINList) Store() (err error) {
 	return
 }
 
-func (l ASINList) PushToSearchQueue() (err error) {
+func (l ASINList) PushToSearcher() (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		var task QueueTask
 
@@ -96,7 +109,7 @@ func (l ASINList) PushToSearchQueue() (err error) {
 	return
 }
 
-func PopASINToSearch(limit uint) (list ASINList, err error) {
+func PopFromSearcher(limit uint) (list ASINList, err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		var taskList QueueTaskList
 		taskList, err = popTaskFromQueue(tx, "asin.searcher_queue", "asin", limit)
@@ -114,17 +127,7 @@ func PopASINToSearch(limit uint) (list ASINList, err error) {
 	return
 }
 
-func DefrostSearchQueue(duration uint32) (err error) {
-	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
-		err = defrostTasks(tx, "asin.searcher_queue", duration)
-
-		return
-	})
-
-	return
-}
-
-func PopASINToEnrich(limit uint) (list ASINList, err error) {
+func PopFromEnricher(limit uint) (list ASINList, err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		var taskList QueueTaskList
 		taskList, err = popTaskFromQueue(tx, "asin.enricher_queue", "asin", limit)
@@ -142,9 +145,47 @@ func PopASINToEnrich(limit uint) (list ASINList, err error) {
 	return
 }
 
-func DefrostEnrichQueue(duration uint32) (err error) {
+func PopFromPublisher(limit uint) (list ASINList, err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
+		var taskList QueueTaskList
+		taskList, err = popTaskFromQueue(tx, "asin.publisher_queue", "asin", limit)
+		if err != nil {
+			return
+		}
+
+		for _, t := range taskList {
+			list = append(list, ASIN(t.Value.(string)))
+		}
+
+		return
+	})
+
+	return
+}
+
+func DefrostSearcher(duration uint32) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
+		err = defrostTasks(tx, "asin.searcher_queue", duration)
+
+		return
+	})
+
+	return
+}
+
+func DefrostEnricher(duration uint32) (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
 		err = defrostTasks(tx, "asin.enricher_queue", duration)
+
+		return
+	})
+
+	return
+}
+
+func DefrostPublisher(duration uint32) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
+		err = defrostTasks(tx, "asin.publisher_queue", duration)
 
 		return
 	})

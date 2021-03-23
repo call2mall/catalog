@@ -30,7 +30,7 @@ func RunEnricher(threads uint) (err error) {
 		asin     dao.ASIN
 	)
 	for {
-		asinList, err = dao.PopASINToEnrich(threads)
+		asinList, err = dao.PopFromEnricher(threads)
 		if err != nil {
 			log.CriticalFmt("Can't pop new ASIN to enrich its pages: %v", err)
 
@@ -54,7 +54,7 @@ func defrostQueue() {
 
 	var err error
 	for range time.NewTicker(time.Minute).C {
-		err = dao.DefrostEnrichQueue(minute)
+		err = dao.DefrostEnricher(minute)
 		if err != nil {
 			log.CriticalFmt("Can't defrost ASIN from enrich queue: %v", err)
 
@@ -100,7 +100,7 @@ func enrichProps(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			defer func() {
 				if !success {
-					e := asin.MarkEnrichAs(dao.Fail)
+					e := asin.MarkEnricherAs(dao.Fail)
 					if e != nil {
 						err = errors.Wrap(err, e.Error())
 
@@ -149,14 +149,14 @@ func enrichProps(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			success = true
 
-			err = asin.MarkEnrichAs(dao.Done)
+			err = asin.MarkEnricherAs(dao.Done)
 			if err != nil {
 				log.ErrorFmt("Can't set status as `done` of enricher queue task for ASIN `%s`: %v", asin, err)
 
 				return
 			}
 
-			err = asin.PushToPublisherQueue()
+			err = asin.PushToPublisher()
 			if err != nil {
 				log.ErrorFmt("Can't push ASIN `%s` to queue to publish its: %v", asin, err)
 

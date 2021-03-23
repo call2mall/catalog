@@ -23,7 +23,7 @@ func RunSearcher(threads uint) (err error) {
 		asin     dao.ASIN
 	)
 	for {
-		asinList, err = dao.PopASINToSearch(threads)
+		asinList, err = dao.PopFromSearcher(threads)
 		if err != nil {
 			log.CriticalFmt("Can't pop new ASIN to search its pages: %v", err)
 
@@ -47,7 +47,7 @@ func defrostQueue() {
 
 	var err error
 	for range time.NewTicker(time.Minute).C {
-		err = dao.DefrostSearchQueue(minute)
+		err = dao.DefrostSearcher(minute)
 		if err != nil {
 			log.CriticalFmt("Can't defrost ASIN from search queue: %v", err)
 
@@ -88,7 +88,7 @@ func searchOrigins(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			defer func() {
 				if !success {
-					e := asin.MarkSearchAs(dao.Fail)
+					e := asin.MarkSearcherAs(dao.Fail)
 					if e != nil {
 						err = errors.Wrap(err, e.Error())
 
@@ -128,14 +128,14 @@ func searchOrigins(ch chan dao.ASIN, proxies *proxy.Proxies) {
 
 			success = true
 
-			err = asin.MarkSearchAs(dao.Done)
+			err = asin.MarkSearcherAs(dao.Done)
 			if err != nil {
 				log.ErrorFmt("Can't set status as `done` of searcher queue task for ASIN `%s`: %v", asin, err)
 
 				return
 			}
 
-			err = asin.PushToEnricherQueue()
+			err = asin.PushToEnricher()
 			if err != nil {
 				log.ErrorFmt("Can't push ASIN `%s` to queue to enrich meta-data: %v", asin, err)
 
