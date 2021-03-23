@@ -20,16 +20,16 @@ type UserAgent interface {
 
 func GetAllUserAgentList() (list []UserAgent) {
 	return []UserAgent{
-		wevikabot.WeViKaBot{},
-		google.NewGoogleBot(),
-		duckduckgo.DuckDuckGoBot{},
-		bing.BingBot{},
-		yahoo.YahooBot{},
-		baidu.BaiduBot{},
-		sogou.NewSogouBot(),
-		yandex.YandexBot{},
-		exabot.NewExaBot(),
-		facebook.NewFacebookBot(),
-		alexa.AlexaBot{},
+		wevikabot.WeViKa{},
+		google.NewGoogle(),
+		duckduckgo.DuckDuckGo{},
+		bing.Bing{},
+		yahoo.Yahoo{},
+		baidu.Baidu{},
+		sogou.NewSogou(),
+		yandex.Yandex{},
+		exabot.NewExabot(),
+		facebook.NewFacebook(),
+		alexa.Alexa{},
 	}
 }

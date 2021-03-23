@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-type WeViKaBot struct {
+type WeViKa struct {
 }
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func (ua WeViKaBot) Header() (value string) {
+func (ua WeViKa) Header() (value string) {
 	bytes := make([]byte, 10)
 	for i := 0; i < 10; i++ {
 		bytes[i] = byte(rand.Intn(99))

@@ -1,8 +1,8 @@
 package yandex
 
-type YandexBot struct {
+type Yandex struct {
 }
 
-func (ua YandexBot) Header() (value string) {
+func (ua Yandex) Header() (value string) {
 	return "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)"
 }

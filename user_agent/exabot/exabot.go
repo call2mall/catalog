@@ -4,14 +4,14 @@ import (
 	"sync"
 )
 
-type ExaBot struct {
+type Exabot struct {
 	mx   *sync.Mutex
 	ix   int
 	list []string
 }
 
-func NewExaBot() (ua *ExaBot) {
-	return &ExaBot{
+func NewExabot() (ua *Exabot) {
+	return &Exabot{
 		mx: &sync.Mutex{},
 		ix: 0,
 		list: []string{
@@ -21,7 +21,7 @@ func NewExaBot() (ua *ExaBot) {
 	}
 }
 
-func (ua ExaBot) Header() (value string) {
+func (ua Exabot) Header() (value string) {
 	ua.mx.Lock()
 	defer ua.mx.Unlock()
 

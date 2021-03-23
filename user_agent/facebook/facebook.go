@@ -4,14 +4,14 @@ import (
 	"sync"
 )
 
-type FacebookBot struct {
+type Facebook struct {
 	mx   *sync.Mutex
 	ix   int
 	list []string
 }
 
-func NewFacebookBot() (ua *FacebookBot) {
-	return &FacebookBot{
+func NewFacebook() (ua *Facebook) {
+	return &Facebook{
 		mx: &sync.Mutex{},
 		ix: 0,
 		list: []string{
@@ -22,7 +22,7 @@ func NewFacebookBot() (ua *FacebookBot) {
 	}
 }
 
-func (ua FacebookBot) Header() (value string) {
+func (ua Facebook) Header() (value string) {
 	ua.mx.Lock()
 	defer ua.mx.Unlock()
 

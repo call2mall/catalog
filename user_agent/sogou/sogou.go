@@ -4,14 +4,14 @@ import (
 	"sync"
 )
 
-type SogouBot struct {
+type Sogou struct {
 	mx   *sync.Mutex
 	ix   int
 	list []string
 }
 
-func NewSogouBot() (ua *SogouBot) {
-	return &SogouBot{
+func NewSogou() (ua *Sogou) {
+	return &Sogou{
 		mx: &sync.Mutex{},
 		ix: 0,
 		list: []string{
@@ -24,7 +24,7 @@ func NewSogouBot() (ua *SogouBot) {
 	}
 }
 
-func (ua SogouBot) Header() (value string) {
+func (ua Sogou) Header() (value string) {
 	ua.mx.Lock()
 	defer ua.mx.Unlock()
 

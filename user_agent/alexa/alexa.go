@@ -1,8 +1,8 @@
 package alexa
 
-type AlexaBot struct {
+type Alexa struct {
 }
 
-func (ua AlexaBot) Header() (value string) {
+func (ua Alexa) Header() (value string) {
 	return "ia_archiver (+http://www.alexa.com/site/help/webmasters; crawler@alexa.com)"
 }

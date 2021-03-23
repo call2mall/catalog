@@ -4,14 +4,14 @@ import (
 	"sync"
 )
 
-type GoogleBot struct {
+type Google struct {
 	mx   *sync.Mutex
 	ix   int
 	list []string
 }
 
-func NewGoogleBot() (ua *GoogleBot) {
-	return &GoogleBot{
+func NewGoogle() (ua *Google) {
+	return &Google{
 		mx: &sync.Mutex{},
 		ix: 0,
 		list: []string{
@@ -29,7 +29,7 @@ func NewGoogleBot() (ua *GoogleBot) {
 	}
 }
 
-func (ua GoogleBot) Header() (value string) {
+func (ua Google) Header() (value string) {
 	ua.mx.Lock()
 	defer ua.mx.Unlock()
 

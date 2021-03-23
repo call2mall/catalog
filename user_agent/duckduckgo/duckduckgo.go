@@ -1,8 +1,8 @@
 package duckduckgo
 
-type DuckDuckGoBot struct {
+type DuckDuckGo struct {
 }
 
-func (ua DuckDuckGoBot) Header() (value string) {
+func (ua DuckDuckGo) Header() (value string) {
 	return "DuckDuckBot/1.0; (+http://duckduckgo.com/duckduckbot.html)"
 }
