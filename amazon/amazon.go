@@ -16,6 +16,7 @@ import (
 	"github.com/call2mall/catalog/translate"
 	"github.com/call2mall/catalog/user_agent"
 	"github.com/chromedp/chromedp"
+	. "github.com/pkg/errors"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -253,9 +254,12 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 	})
 
 	if isAutomationDetected {
-		err = fmt.Errorf("amazon web-site `%s` responses: %v", urlData.Host, DetectedAutomation)
+		html, err = extractPropByGoogleCache(amazonUrl, proxies)
+		if err != nil {
+			err = Wrap(err, fmt.Sprintf("amazon web-site `%s` responses: %v", urlData.Host, DetectedAutomation))
 
-		return
+			return
+		}
 	}
 
 	if err != nil {
@@ -336,6 +340,73 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 	} else if state != 200 {
 		err = fmt.Errorf("can't load image from `%s` because the server returned unexpected state", amazonUrl)
 
+		return
+	}
+
+	return
+}
+
+func extractPropByGoogleCache(amazonUrl string, proxies *proxy.Proxies) (html string, err error) {
+	b := browser.NewBrowser()
+	proxyAddr, ok := proxies.Next()
+	if ok {
+		err = b.Proxy(proxyAddr)
+		if err != nil {
+			return
+		}
+	}
+
+	queryUrl := url.URL{
+		Scheme: "https",
+		Host:   "www.google.com",
+		Path:   "search",
+		RawQuery: url.Values{
+			"q": []string{amazonUrl},
+		}.Encode(),
+	}
+
+	var result string
+	err = b.Run(queryUrl.String(), []chromedp.Action{
+		chromedp.Sleep(time.Second),
+		chromedp.WaitVisible("#search", chromedp.ByID),
+		chromedp.OuterHTML("html", &result),
+	})
+	if err != nil {
+		return
+	}
+
+	reader := strings.NewReader(result)
+
+	var doc *goquery.Document
+	doc, err = goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		return
+	}
+
+	var cachedUrl string
+	doc.Find("#search a").EachWithBreak(func(i int, sel *goquery.Selection) (ok bool) {
+		cachedUrl = sel.AttrOr("href", "")
+
+		if strings.HasPrefix(cachedUrl, "https://webcache") {
+			fmt.Println(cachedUrl)
+
+			return true
+		}
+
+		return false
+	})
+
+	if len(cachedUrl) == 0 {
+		return
+	}
+
+	b.AddHeader("referer", queryUrl.String())
+
+	err = b.Run(cachedUrl, []chromedp.Action{
+		chromedp.Sleep(time.Second),
+		chromedp.OuterHTML("html", &html),
+	})
+	if err != nil {
 		return
 	}
 
