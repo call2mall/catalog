@@ -32,7 +32,7 @@ func RunEnricher(threads uint) (err error) {
 	for {
 		asinList, err = dao.PopFromEnricher(threads)
 		if err != nil {
-			log.CriticalFmt("Can't pop new ASIN to enrich its pages: %v", err)
+			log.CriticalFmt("Can't pop new ASIN to enricher its pages: %v", err)
 
 			continue
 		}

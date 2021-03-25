@@ -25,7 +25,7 @@ func RunSearcher(threads uint) (err error) {
 	for {
 		asinList, err = dao.PopFromSearcher(threads)
 		if err != nil {
-			log.CriticalFmt("Can't pop new ASIN to search its pages: %v", err)
+			log.CriticalFmt("Can't pop new ASIN to searcher its pages: %v", err)
 
 			continue
 		}
