@@ -129,6 +129,8 @@ func enrichProps(ch chan dao.ASIN, proxies *proxy.Proxies) {
 					continue
 				}
 
+				props.ASIN = asin
+
 				if len(props.Image.Bytes) > 0 {
 					break
 				}
