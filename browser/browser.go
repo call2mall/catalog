@@ -34,13 +34,16 @@ type Browser struct {
 
 	path string
 
-	userAgent string
+	headers map[string]interface{}
 }
 
 func NewBrowser() (c *Browser) {
 	return &Browser{
 		isHeadless: true,
 		timeout:    time.Minute,
+		headers: map[string]interface{}{
+			"accept-language": "en-US,en;q=0.9,de;q=0.8,fr;q=0.7,it;q=0.6,es;q=0.5,nl;q=0.4,*;q=0.2",
+		},
 	}
 }
 
@@ -67,7 +70,11 @@ func (b *Browser) Proxy(proxyAddr string) (err error) {
 }
 
 func (b *Browser) UserAgent(userAgent string) {
-	b.userAgent = userAgent
+	b.AddHeader("user-agent", userAgent)
+}
+
+func (b *Browser) AddHeader(header, value string) {
+	b.headers[header] = value
 }
 
 func (b *Browser) Timeout(timeout time.Duration) {
@@ -167,14 +174,6 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 		}()
 	})
 
-	var headers = map[string]interface{}{
-		"accept-language": "en-US,en;q=0.9,de;q=0.8,fr;q=0.7,it;q=0.6,es;q=0.5,nl;q=0.4,*;q=0.2",
-	}
-
-	if len(b.userAgent) > 0 {
-		headers["user-agent"] = b.userAgent
-	}
-
 	if len(b.path) > 0 {
 		var bs []byte
 		defer func() {
@@ -217,7 +216,7 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 	actions = append([]chromedp.Action{
 		fetch.Enable().WithHandleAuthRequests(true),
 		network.Enable(),
-		network.SetExtraHTTPHeaders(headers),
+		network.SetExtraHTTPHeaders(b.headers),
 		chromedp.Navigate(rawUrl),
 	}, actions...)
 
