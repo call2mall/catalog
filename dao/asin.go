@@ -303,7 +303,12 @@ func (af ASINProps) Store() (err error) {
 
 		upd := `update asin.list set category_id = $2, title = $3, l8n = $4, image_hash = $5 where asin = $1;`
 
-		fmt.Println(upd, af.ASIN, categoryId, af.Category.Name, af.Title, af.Image.Hash())
+		fmt.Println(upd)
+		fmt.Println(af.ASIN)
+		fmt.Println(categoryId)
+		fmt.Println(af.Category.Name)
+		fmt.Println(af.Title)
+		fmt.Println(af.Image.Hash())
 
 		_, err = tx.Exec(upd, af.ASIN, categoryId, sql.NullString{
 			String: af.Title,
