@@ -2,7 +2,6 @@ package dao
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/call2mall/conn"
 	"github.com/jmoiron/sqlx"
 )
@@ -302,13 +301,6 @@ func (af ASINProps) Store() (err error) {
 		}
 
 		upd := `update asin.list set category_id = $2, title = $3, l8n = $4, image_hash = $5 where asin = $1;`
-
-		fmt.Println(upd)
-		fmt.Println(af.ASIN)
-		fmt.Println(categoryId)
-		fmt.Println(af.Category.Name)
-		fmt.Println(af.Title)
-		fmt.Println(af.Image.Hash())
 
 		_, err = tx.Exec(upd, af.ASIN, categoryId, sql.NullString{
 			String: af.Title,
