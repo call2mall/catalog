@@ -19,7 +19,6 @@ import (
 	. "github.com/pkg/errors"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -189,6 +188,8 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 		l8n           string
 		withL8nSwitch bool
 		withTranslate bool
+
+		detectedL8n translate.L8n
 	)
 	_, l8n, withL8nSwitch, err = dao.DetectL8nOfOrigin(amazonUrl)
 	if err != nil {
@@ -241,8 +242,6 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 					return
 				}
 
-				fmt.Println(html)
-				os.Exit(0)
 				if strings.Contains(html, "ref=cs_503_link") {
 					isAutomationDetected = true
 
@@ -286,6 +285,15 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 		return
 	}
 
+	if !withTranslate {
+		detectedL8n = translate.DetectL8n(props.Title)
+		if detectedL8n != translate.EnglishL8n {
+			withTranslate = true
+
+			l8n = string(detectedL8n)
+		}
+	}
+
 	if withTranslate {
 		tr := translate.NewTranslate(proxies)
 		props.Title, err = tr.Translate(props.Title, l8n, "en")
@@ -305,7 +313,17 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 	props.Category.Name = strings.ReplaceAll(props.Category.Name, "&amp;", "and")
 	if len(props.Category.Name) == 0 {
 		props.Category.Name = DefaultCategory
-	} else if withTranslate {
+		withTranslate = false
+	} else if !withTranslate {
+		detectedL8n = translate.DetectL8n(props.Category.Name)
+		if detectedL8n != translate.EnglishL8n {
+			withTranslate = true
+
+			l8n = string(detectedL8n)
+		}
+	}
+
+	if withTranslate {
 		tr := translate.NewTranslate(proxies)
 		props.Category.Name, err = tr.Translate(props.Category.Name, l8n, "en")
 		if err != nil {
