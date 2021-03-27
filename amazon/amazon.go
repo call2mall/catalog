@@ -19,6 +19,7 @@ import (
 	. "github.com/pkg/errors"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -240,6 +241,8 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 					return
 				}
 
+				fmt.Println(html)
+				os.Exit(0)
 				if strings.Contains(html, "ref=cs_503_link") {
 					isAutomationDetected = true
 
