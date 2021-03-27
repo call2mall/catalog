@@ -61,14 +61,28 @@ create table if not exists asin.image
 create unique index if not exists image_hash_uix
     on asin.image (hash);
 
-create table if not exists asin.category
+create table if not exists catalog.category
 (
     id           serial      not null
         constraint category_pk
             primary key,
     name         varchar(64) not null,
-    l8n          text        null,
     is_available bool        not null default false
+);
+
+create unique index if not exists category_name_uix
+    on catalog.category (name);
+
+create table if not exists asin.category
+(
+    id          serial      not null
+        constraint category_pk
+            primary key,
+    name        varchar(64) not null,
+    category_id int default null,
+    constraint category_category_id_fk
+        foreign key (category_id) references catalog.category
+            on update cascade on delete restrict
 );
 
 create unique index if not exists category_name_uix
@@ -89,18 +103,17 @@ create table if not exists asin.list
         constraint list_image_fk
             references asin.image
             on update cascade on delete set null,
-    timestamp   timestamp   not null default current_timestamp,
-    is_ready    bool        not null default false
+    timestamp   timestamp   not null default current_timestamp
 );
 
 create table asin.origin
 (
-    asin varchar(64)  not null
+    asin    varchar(64)   not null
         constraint origin_list_asin_fk
             references asin.list
             on update cascade on delete cascade,
-    country char(2)      not null,
-    url  varchar(1024) not null
+    country char(2)       not null,
+    url     varchar(1024) not null
 );
 
 create unique index origin_asin_country_uix
@@ -157,7 +170,7 @@ create table if not exists catalog.unit
     warehouse_id  varchar(64) not null,
     ean           varchar(64) not null,
     asin          varchar(64) not null
-        constraint unit_asin_fk
+        constraint unit_list_asin_fk
             references asin.list
             on update cascade on delete cascade,
     sku           varchar(64) null,
@@ -167,7 +180,8 @@ create table if not exists catalog.unit
     unit_discount int         null,
     retail_price  int         null,
     timestamp     timestamp   not null default current_timestamp,
-    is_published  bool        not null default false
+    is_published  bool        not null default false,
+    is_remove     bool                 default false not null
 );
 
 create unique index if not exists unit_warehouse_ean_asin_uix

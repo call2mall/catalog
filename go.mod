@@ -11,6 +11,7 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20210305224431-50b9f457e822
 	github.com/chromedp/chromedp v0.6.8
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/jhillyerd/enmime v0.8.4 // indirect
 	github.com/jmoiron/sqlx v1.3.1

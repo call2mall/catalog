@@ -10,6 +10,8 @@ import (
 type Category struct {
 	Id   uint32
 	Name string
+
+	CatalogCategoryId uint32
 }
 
 func (c *Category) Store() (id uint32, err error) {

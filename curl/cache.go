@@ -29,7 +29,7 @@ func (cache *Cache) Save(rawUrl string, bs []byte) (err error) {
 
 	path := cache.genPath(rawUrl)
 
-	err = os.MkdirAll(filepath.Dir(path), 0777)
+	err = os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return
 	}

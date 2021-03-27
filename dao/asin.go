@@ -193,35 +193,6 @@ func DefrostPublisher(duration uint32) (err error) {
 	return
 }
 
-func LoadAllASIN(isReady bool) (list ASINList, err error) {
-	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
-		query := `select asin from asin.list l where l.is_ready = ?;`
-
-		var rows *sqlx.Rows
-		rows, err = tx.Queryx(query, isReady)
-		if err != nil {
-			return
-		}
-		defer func() {
-			_ = rows.Close()
-		}()
-
-		var number ASIN
-		for rows.Next() {
-			err = rows.Scan(&number)
-			if err != nil {
-				return
-			}
-
-			list = append(list, number)
-		}
-
-		return
-	})
-
-	return
-}
-
 func (l ASINList) Diff(o ASINList) (d ASINList) {
 	var heap = map[ASIN]interface{}{}
 	for _, a := range l {
@@ -256,9 +227,9 @@ type ASINMeta struct {
 	ImageName string
 }
 
-func GetPropsByASIN(asin ASIN) (props ASINProps, err error) {
+func GetProps(asin ASIN) (props ASINProps, err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
-		query := `select l.category_id, c.name, l.title, l.l8n, i.bytes, i.hash 
+		query := `select c.id, c.name, c.category_id, l.title, l.l8n, i.bytes, i.hash 
 					from asin.list l 
 					join asin.image i on l.image_hash = i.hash
 					join asin.category c on l.category_id = c.id
@@ -266,15 +237,21 @@ func GetPropsByASIN(asin ASIN) (props ASINProps, err error) {
 
 		var (
 			category Category
-			asinL8n  sql.NullString
 			image    Image
+
+			asinL8n           sql.NullString
+			catalogCategoryId sql.NullInt32
 		)
-		err = tx.QueryRowx(query, asin).Scan(&category.Id, &category.Name,
+		err = tx.QueryRowx(query, asin).Scan(&category.Id, &category.Name, &catalogCategoryId,
 			&props.Title, &asinL8n, &image.Bytes, &props.ImageName)
 		if err == sql.ErrNoRows {
 			err = nil
 
 			return
+		}
+
+		if catalogCategoryId.Valid {
+			category.CatalogCategoryId = uint32(catalogCategoryId.Int32)
 		}
 
 		if asinL8n.Valid {

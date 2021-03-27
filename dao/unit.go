@@ -32,7 +32,7 @@ func (u *Unit) store(tx *sqlx.Tx) (err error) {
 	query := `insert into catalog.unit (warehouse_id, ean, asin, sku, condition, quantity, unit_cost, unit_discount, retail_price)
 				values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 				on conflict (warehouse_id, ean, asin)
-				do update set sku = $4, condition = $5, quantity = $6, unit_cost = $7, unit_discount = $7, retail_price = $8
+				do update set sku = $4, condition = $5, quantity = $6, unit_cost = $7, unit_discount = $7, retail_price = $8, is_remove = false
 				returning id;`
 
 	err = tx.QueryRowx(query,
