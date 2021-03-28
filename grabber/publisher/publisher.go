@@ -117,23 +117,33 @@ func publishProps(ch chan dao.ASIN) {
 
 			props, err = dao.GetProps(asin)
 			if err != nil {
+				log.ErrorFmt("Can't get properties for ASIN `%s`: %v", asin, err)
+
 				return
 			}
 
 			if props.Category.CatalogCategoryId == 0 {
+				log.DebugFmt("ASIN `%s` doesn't have catalog category ID binding", asin)
+
 				return
 			}
 
 			if len(props.Title) == 0 {
+				log.DebugFmt("ASIN `%s` doesn't have title", asin)
+
 				return
 			}
 
 			if len(props.ImageName) == 0 {
+				log.DebugFmt("ASIN `%s` doesn't have image hash", asin)
+
 				return
 			}
 
 			img, err = prepareImage(props.Image.Bytes, size)
 			if err != nil {
+				log.ErrorFmt("Can't prepare image for ASIN `%s`: %v", asin, err)
+
 				return
 			}
 
@@ -141,16 +151,22 @@ func publishProps(ch chan dao.ASIN) {
 
 			err = os.MkdirAll(filepath.Dir(filePath), 0755)
 			if err != nil {
+				log.ErrorFmt("Can't create directory `%s` for ASIN `%s`: %v", filepath.Dir(filePath), asin, err)
+
 				return
 			}
 
 			err = os.WriteFile(filePath, img, 0666)
 			if err != nil {
+				log.ErrorFmt("Can't write image `%s` for ASIN `%s`: %v", filePath, asin, err)
+
 				return
 			}
 
 			err = asin.Publish()
 			if err != nil {
+				log.ErrorFmt("Can't publish ASIN `%s`: %v", asin, err)
+
 				return
 			}
 
