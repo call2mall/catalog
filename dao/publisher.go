@@ -7,8 +7,8 @@ import (
 
 func (a ASIN) Publish() (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
-		query := `update catalog.unit set is_published = true where asin = ?;`
-		_, err = tx.Exec(query, string(a))
+		query := `update catalog.unit set is_published = true where asin = $1;`
+		_, err = tx.Exec(query, a)
 
 		return
 	})
