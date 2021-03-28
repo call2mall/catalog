@@ -305,3 +305,32 @@ func (af ASINProps) Store() (err error) {
 
 	return
 }
+
+func GetPublishedASIN() (al ASINList, err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
+		query := `select u.asin from catalog.unit u where u.is_published and not u.is_remove;`
+
+		var rows *sqlx.Rows
+		rows, err = tx.Queryx(query)
+		if err != nil {
+			return
+		}
+		defer func() {
+			_ = rows.Close()
+		}()
+
+		var a ASIN
+		for rows.Next() {
+			err = rows.Scan(&a)
+			if err != nil {
+				return
+			}
+
+			al = append(al, a)
+		}
+
+		return
+	})
+
+	return
+}

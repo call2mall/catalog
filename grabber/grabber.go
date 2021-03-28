@@ -59,31 +59,44 @@ func GrabUnits() (err error) {
 		return
 	}
 
-	var unitList dao.UnitList
-	unitList, err = extractor.ExtractData(dstPath)
-	fmt.Println(len(unitList))
-	if err != nil || len(unitList) == 0 {
+	var newUnitList dao.UnitList
+	newUnitList, err = extractor.ExtractData(dstPath)
+	fmt.Println(len(newUnitList))
+	if err != nil || len(newUnitList) == 0 {
 		return
 	}
 
-	asinList := unitList.ExtractASINList()
+	newASINList := newUnitList.ExtractASINList()
 
-	err = asinList.Store()
+	var publishedASINList dao.ASINList
+	publishedASINList, err = dao.GetPublishedASIN()
 	if err != nil {
 		return
 	}
 
-	err = unitList.Store()
+	addingASINList := publishedASINList.Diff(newASINList)
+	err = addingASINList.Store()
 	if err != nil {
 		return
 	}
 
-	err = asinList.PushToSearcher()
+	removingASINList := newASINList.Diff(publishedASINList)
+	err = dao.RemoveUnitListByASINList(removingASINList)
 	if err != nil {
 		return
 	}
 
-	log.DebugFmt("New %d units were stored successful", len(unitList))
+	err = newUnitList.Store()
+	if err != nil {
+		return
+	}
+
+	err = newASINList.PushToSearcher()
+	if err != nil {
+		return
+	}
+
+	log.DebugFmt("New %d units were stored successful", len(newUnitList))
 
 	return
 }

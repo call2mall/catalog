@@ -91,3 +91,20 @@ func (ul UnitList) Store() (err error) {
 
 	return
 }
+
+func RemoveUnitListByASINList(al ASINList) (err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
+		query := `delete from catalog.unit where asin = $1;`
+
+		for _, a := range al {
+			_, err = tx.Exec(query, a)
+			if err != nil {
+				return
+			}
+		}
+
+		return
+	})
+
+	return
+}
