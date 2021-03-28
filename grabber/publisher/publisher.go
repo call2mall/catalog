@@ -137,8 +137,14 @@ func publishProps(ch chan dao.ASIN) {
 				return
 			}
 
-			filePath = filepath.Join(dirPath, string(asin))
-			err = os.WriteFile(filePath, img, 0555)
+			filePath = asin.FilePath(dirPath)
+
+			err = os.MkdirAll(filepath.Dir(filePath), 0755)
+			if err != nil {
+				return
+			}
+
+			err = os.WriteFile(filePath, img, 0666)
 			if err != nil {
 				return
 			}

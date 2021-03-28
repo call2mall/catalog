@@ -2,11 +2,20 @@ package dao
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/call2mall/conn"
 	"github.com/jmoiron/sqlx"
+	"path/filepath"
 )
 
 type ASIN string
+
+func (a ASIN) FilePath(baseDir string) (filePath string) {
+	prefix := a[0:4]
+	filePath = filepath.Join(baseDir, fmt.Sprintf("%s/%s.jpg", prefix, a))
+
+	return
+}
 
 func (a ASIN) MarkSearcherAs(state QueueState) (err error) {
 	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
@@ -257,6 +266,10 @@ func GetProps(asin ASIN) (props ASINProps, err error) {
 		if asinL8n.Valid {
 			props.Title = asinL8n.String
 		}
+
+		props.ASIN = asin
+		props.Category = category
+		props.Image = image
 
 		return
 	})
