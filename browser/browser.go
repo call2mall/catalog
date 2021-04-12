@@ -35,6 +35,8 @@ type Browser struct {
 	path string
 
 	headers map[string]interface{}
+
+	acceptedCodes map[uint32]interface{}
 }
 
 func NewBrowser() (c *Browser) {
@@ -43,6 +45,11 @@ func NewBrowser() (c *Browser) {
 		timeout:    time.Minute,
 		headers: map[string]interface{}{
 			"accept-language": "en-US,en;q=0.9,de;q=0.8,fr;q=0.7,it;q=0.6,es;q=0.5,nl;q=0.4,*;q=0.2",
+		},
+		acceptedCodes: map[uint32]interface{}{
+			200: nil,
+			301: nil,
+			302: nil,
 		},
 	}
 }
@@ -70,11 +77,17 @@ func (b *Browser) Proxy(proxyAddr string) (err error) {
 }
 
 func (b *Browser) UserAgent(userAgent string) {
-	b.AddHeader("user-agent", userAgent)
+	b.SetHeader("user-agent", userAgent)
 }
 
-func (b *Browser) AddHeader(header, value string) {
+func (b *Browser) SetHeader(header, value string) {
 	b.headers[header] = value
+}
+
+func (b *Browser) AddAcceptedResponseCode(codes ...uint32) {
+	for _, code := range codes {
+		b.acceptedCodes[code] = nil
+	}
 }
 
 func (b *Browser) Timeout(timeout time.Duration) {
@@ -114,6 +127,8 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 
 	opts = append(opts, chromedp.Flag("headless", b.isHeadless),
 		chromedp.Flag("incognito", true),
+		chromedp.Flag("no-default-browser-check", true),
+		chromedp.Flag("ignore-certificate-errors", true),
 		chromedp.Flag("disable-gpu", true),
 		chromedp.Flag("disable-gpu-shader-disk-cache", true),
 		chromedp.Flag("enable-automation", true),
@@ -170,6 +185,13 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 				execCtx := cdp.WithExecutor(b.ctx, chromedp.FromContext(b.ctx).Target)
 
 				_ = fetch.ContinueRequest(ev.RequestID).Do(execCtx)
+			case *network.EventResponseReceived:
+				if ev.Type == network.ResourceTypeDocument {
+					_, ok := b.acceptedCodes[uint32(ev.Response.Status)]
+					if !ok {
+						b.Cancel()
+					}
+				}
 			}
 		}()
 	})

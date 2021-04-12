@@ -35,7 +35,7 @@ func (a Amazon) FindPages(asin dao.ASIN, proxies *proxy.Proxies) (urlList []stri
 	})
 
 	var (
-		domainsRegExp = regexp.MustCompile("^(www\\.)?amazon\\.(co\\.uk|com\\.au|co\\.jp|ae|de|it|fr|es|nl|se|sg)$")
+		domainsRegExp = regexp.MustCompile("^(www\\.)?amazon\\.(co\\.uk|com\\.au|co\\.jp|com\\.mx|ae|sa|de|it|fr|es|nl|se|sg|in|ca)$")
 		list          []string
 	)
 
@@ -88,7 +88,32 @@ func (a Amazon) FindPages(asin dao.ASIN, proxies *proxy.Proxies) (urlList []stri
 		}
 	}
 
+	if len(urlList) == 0 {
+		urlList, err = searchThroughProductQA(asin, b)
+		if err != nil {
+			return
+		}
+	}
+
 	return
+}
+
+var domains = []string{
+	"amazon.ca",
+	"amazon.co.uk",
+	"amazon.com.au",
+	"amazon.co.jp",
+	"amazon.sg",
+	"amazon.nl",
+	"amazon.se",
+	"amazon.de",
+	"amazon.fr",
+	"amazon.es",
+	"amazon.com.mx",
+	"amazon.it",
+	"amazon.ae",
+	"amazon.sa",
+	"amazon.in",
 }
 
 func searchThroughProductReport(asin dao.ASIN, b *browser.Browser) (urlList []string, err error) {
@@ -99,20 +124,6 @@ func searchThroughProductReport(asin dao.ASIN, b *browser.Browser) (urlList []st
 		ok     bool
 
 		pos int
-
-		domains = []string{
-			"amazon.co.uk",
-			"amazon.com.au",
-			"amazon.co.jp",
-			"amazon.sg",
-			"amazon.nl",
-			"amazon.se",
-			"amazon.de",
-			"amazon.fr",
-			"amazon.es",
-			"amazon.it",
-			"amazon.ae",
-		}
 	)
 
 	for _, host := range domains {
@@ -174,7 +185,74 @@ func extractOriginFromProductReport(urlData *url.URL, b *browser.Browser) (resUr
 	return
 }
 
-const DefaultCategory = "Out of category"
+func searchThroughProductQA(asin dao.ASIN, b *browser.Browser) (urlList []string, err error) {
+	var (
+		urlData url.URL
+
+		resUrl string
+		ok     bool
+
+		pos int
+	)
+
+	for _, host := range domains {
+		urlData = url.URL{
+			Scheme: "https",
+			Host:   host,
+			Path:   fmt.Sprintf("/ask/questions/asin/%s", asin),
+		}
+
+		resUrl, ok, err = extractOriginFromAQ(&urlData, b)
+		if err != nil {
+			return
+		}
+
+		if ok {
+			pos = strings.Index(resUrl, "/ref=")
+			if pos > -1 {
+				resUrl = resUrl[0:pos]
+			}
+
+			urlList = append(urlList, resUrl)
+		}
+	}
+
+	return
+}
+
+func extractOriginFromAQ(urlData *url.URL, b *browser.Browser) (resUrl string, ok bool, err error) {
+	var html string
+	html, err = b.GetHtml(urlData.String())
+	if err != nil {
+		return
+	}
+
+	reader := strings.NewReader(html)
+
+	var doc *goquery.Document
+	doc, err = goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		return
+	}
+
+	resUrl, ok = doc.Find(".askProductDescription a.a-size-large.a-link-normal[href]").First().Attr("href")
+
+	var resData *url.URL
+	resData, err = url.Parse(resUrl)
+	if err != nil {
+		return
+	}
+
+	if !strings.HasPrefix(resUrl, "http") {
+		resData = urlData.ResolveReference(resData)
+	}
+
+	resData.RawQuery = url.Values{}.Encode()
+
+	resUrl = resData.String()
+
+	return
+}
 
 var (
 	NoProductCategory  = errors.New("there isn't product category")
@@ -191,7 +269,7 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 
 		detectedL8n translate.L8n
 	)
-	_, l8n, withL8nSwitch, err = dao.DetectL8nOfOrigin(amazonUrl)
+	_, l8n, withL8nSwitch, err = translate.DetectL8nByAmazonUrl(amazonUrl)
 	if err != nil {
 		return
 	}
@@ -308,12 +386,21 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 		}
 	}
 
+	doc.Find("#wayfinding-breadcrumbs_feature_div ul li a").Each(func(i int, sel *goquery.Selection) {
+		var category = sel.Text()
+		category = strings.TrimSpace(category)
+		category = strings.ReplaceAll(category, "&amp;", "and")
+
+		fmt.Println(category)
+	})
+
 	props.Category.Name = doc.Find("#wayfinding-breadcrumbs_feature_div ul li:first-of-type a").First().Text()
 	props.Category.Name = strings.TrimSpace(props.Category.Name)
 	props.Category.Name = strings.ReplaceAll(props.Category.Name, "&amp;", "and")
 	if len(props.Category.Name) == 0 {
-		props.Category.Name = DefaultCategory
-		withTranslate = false
+		err = NoProductCategory
+
+		return
 	} else if !withTranslate {
 		detectedL8n = translate.DetectL8n(props.Category.Name)
 		if detectedL8n != translate.EnglishL8n {
@@ -421,7 +508,7 @@ func extractPropByGoogleCache(amazonUrl string, proxies *proxy.Proxies) (html st
 		return
 	}
 
-	b.AddHeader("referer", queryUrl.String())
+	b.SetHeader("referer", queryUrl.String())
 
 	err = b.Run(cachedUrl, []chromedp.Action{
 		chromedp.Sleep(time.Second),

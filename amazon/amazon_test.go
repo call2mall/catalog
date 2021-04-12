@@ -55,6 +55,17 @@ func TestSearchThroughProductReport(t *testing.T) {
 	fmt.Println(urlList)
 }
 
+func TestSearchThroughProductQA(t *testing.T) {
+	b := browser.NewBrowser()
+
+	urlList, err := searchThroughProductQA("B004K8K7MO", b)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	fmt.Println(urlList)
+}
+
 func TestExtractPropByGoogleCache(t *testing.T) {
 	proxies := proxy.NewProxies([]string{
 		"http://emiles01:xVypbJnv@51.89.10.102:29842",

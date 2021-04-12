@@ -334,3 +334,32 @@ func GetPublishedASIN() (al ASINList, err error) {
 
 	return
 }
+
+func GetAllASIN() (al ASINList, err error) {
+	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
+		query := `select l.asin from asin.list l;`
+
+		var rows *sqlx.Rows
+		rows, err = tx.Queryx(query)
+		if err != nil {
+			return
+		}
+		defer func() {
+			_ = rows.Close()
+		}()
+
+		var a ASIN
+		for rows.Next() {
+			err = rows.Scan(&a)
+			if err != nil {
+				return
+			}
+
+			al = append(al, a)
+		}
+
+		return
+	})
+
+	return
+}
