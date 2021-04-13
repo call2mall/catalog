@@ -32,15 +32,11 @@
     "mark": "avides"
   },
   "grabber": {
-    "path": "./download"
-  },
-  "publisher": {
-    "size": 200,
-    "path": "./static/photo"
-  },
-  "threads": {
-    "searcher": 5,
-    "enricher": 5,
-    "publisher": 10
+    "path": "./download",
+    "image": {
+      "size": 200,
+      "path": "./static/photo"
+    },
+    "threads": 5
   }
 }

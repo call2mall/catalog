@@ -1,21 +1,19 @@
 package dao
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"github.com/call2mall/conn"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4"
 )
 
 type Category struct {
 	Id   uint32
-	Name string
-
-	CatalogCategoryId uint32
+	Name []string
 }
 
 func (c *Category) Store() (id uint32, err error) {
-	err = conn.WithSQL(func(tx *sqlx.Tx) (err error) {
+	err = conn.WithSQL(func(tx pgx.Tx) (err error) {
 		id, err = c.store(tx)
 
 		return
@@ -24,7 +22,7 @@ func (c *Category) Store() (id uint32, err error) {
 	return
 }
 
-func (c *Category) store(tx *sqlx.Tx) (id uint32, err error) {
+func (c *Category) store(tx pgx.Tx) (id uint32, err error) {
 	if len(c.Name) == 0 {
 		err = fmt.Errorf("category name is empty")
 
@@ -34,18 +32,18 @@ func (c *Category) store(tx *sqlx.Tx) (id uint32, err error) {
 	if c.Id > 0 {
 		upd := `update asin.category set name = $2 where id = $1;`
 
-		_, err = tx.Exec(upd, c.Id, c.Name)
+		_, err = tx.Exec(context.Background(), upd, c.Id, c.Name)
 		if err != nil {
 			return
 		}
 	} else {
 		sel := `select c.id from asin.category c where c.name = $1;`
 
-		err = tx.QueryRowx(sel, c.Name).Scan(&id)
-		if err == sql.ErrNoRows {
+		err = tx.QueryRow(context.Background(), sel, c.Name).Scan(&id)
+		if err == pgx.ErrNoRows {
 			ins := `insert into asin.category (name) values ($1) returning id;`
 
-			err = tx.QueryRow(ins, c.Name).Scan(&id)
+			err = tx.QueryRow(context.Background(), ins, c.Name).Scan(&id)
 			if err != nil {
 				return
 			}

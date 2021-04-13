@@ -75,14 +75,10 @@ create unique index if not exists category_name_uix
 
 create table if not exists asin.category
 (
-    id          serial      not null
+    id   serial        not null
         constraint category_pk
             primary key,
-    name        varchar(64) not null,
-    category_id int default null,
-    constraint category_category_id_fk
-        foreign key (category_id) references catalog.category
-            on update cascade on delete restrict
+    name varchar(64)[] not null
 );
 
 create unique index if not exists category_name_uix
@@ -106,54 +102,10 @@ create table if not exists asin.list
     timestamp   timestamp   not null default current_timestamp
 );
 
-create table asin.origin
-(
-    asin    varchar(64)   not null
-        constraint origin_list_asin_fk
-            references asin.list
-            on update cascade on delete cascade,
-    country char(2)       not null,
-    url     varchar(1024) not null
-);
-
-create unique index origin_asin_country_uix
-    on asin.origin (asin, country);
-
-alter table asin.origin
-    add constraint origin_pk
-        primary key (asin, country);
-
-create index origin_asin_ix
-    on asin.origin (asin);
-
-create table if not exists asin.searcher_queue
+create table if not exists asin.grabber_queue
 (
     asin    varchar(64)                                  not null
         constraint searcher_asin_asin_fk
-            references asin.list (asin)
-            on update cascade on delete cascade
-        primary key,
-    state   public.queue_state default 'pending'         not null,
-    added   timestamp          default current_timestamp not null,
-    updated timestamp          default null
-);
-
-create table if not exists asin.enricher_queue
-(
-    asin    varchar(64)                                  not null
-        constraint enricher_asin_asin_fk
-            references asin.list (asin)
-            on update cascade on delete cascade
-        primary key,
-    state   public.queue_state default 'pending'         not null,
-    added   timestamp          default current_timestamp not null,
-    updated timestamp          default null
-);
-
-create table if not exists asin.publisher_queue
-(
-    asin    varchar(64)                                  not null
-        constraint publisher_asin_asin_fk
             references asin.list (asin)
             on update cascade on delete cascade
         primary key,

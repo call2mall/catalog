@@ -2,83 +2,87 @@ package amazon
 
 import (
 	"fmt"
-	"github.com/call2mall/catalog/browser"
-	"github.com/call2mall/catalog/proxy"
+	"github.com/call2mall/catalog/dao"
+	"github.com/call2mall/conn"
+	config "github.com/leprosus/golang-config"
+	log "github.com/leprosus/golang-log"
 	"testing"
 )
 
-func TestAmazon_FindPages(t *testing.T) {
-	proxies := proxy.NewProxies([]string{
-		"http://emiles01:xVypbJnv@51.89.10.102:29842",
-		"http://emiles01:xVypbJnv@51.89.130.34:29842",
-		"http://emiles01:xVypbJnv@51.83.17.111:29842",
-		"http://emiles01:xVypbJnv@51.89.31.32:29842",
-		"http://emiles01:xVypbJnv@51.89.131.103:29842",
-	})
+func init() {
+	log.Stdout(true)
 
-	a := Amazon{}
-	urlList, err := a.FindPages("B07K3SS94V", proxies)
+	_ = config.Init("../config.json")
+	_ = conn.InitSQL(config.String("psql.user"), config.String("psql.pass"), config.String("psql.database"), config.String("psql.host"), config.UInt32("psql.port"))
+
+	log.Path(config.Path("log.path"))
+}
+
+func TestParser(t *testing.T) {
+	asinList, err := dao.GetAllASIN()
 	if err != nil {
 		t.Error(err)
 	}
 
-	fmt.Println(urlList)
-}
+	var (
+		asin dao.ASIN
+		ch   = make(chan dao.ASIN)
+	)
 
-func TestAmazon_ExtractProps(t *testing.T) {
-	proxies := proxy.NewProxies([]string{
-		"http://emiles01:xVypbJnv@51.89.10.102:29842",
-		"http://emiles01:xVypbJnv@51.89.130.34:29842",
-		"http://emiles01:xVypbJnv@51.83.17.111:29842",
-		"http://emiles01:xVypbJnv@51.89.31.32:29842",
-		"http://emiles01:xVypbJnv@51.89.131.103:29842",
-	})
-
-	a := Amazon{}
-
-	props, err := a.ExtractProps("https://amazon.co.uk/Bluetooth-Autoradio-Mercedes-Sprinter-B-Klasse/dp/B07961DHKH", proxies)
-	if err != nil {
-		t.Error(err)
+	for i := 0; i < 5; i++ {
+		go instance(ch)
 	}
 
-	fmt.Println(props)
+	for _, asin = range asinList {
+		ch <- asin
+	}
 }
 
-func TestSearchThroughProductReport(t *testing.T) {
-	b := browser.NewBrowser()
+func instance(ch chan dao.ASIN) {
+	var (
+		asin dao.ASIN
 
-	urlList, err := searchThroughProductReport("B004K8K7MO", b)
-	if err != nil {
-		t.Fatal(err.Error())
+		meta Meta
+		ok   bool
+		err  error
+
+		a *Amazon
+	)
+	for asin = range ch {
+		a, err = NewAmazon()
+		if err != nil {
+			log.ErrorFmt("Can't init amazon handler: %v", err)
+
+			continue
+		}
+
+		meta, ok, err = a.ExtractFromReview(asin)
+		if err != nil {
+			log.Error(err.Error())
+
+			continue
+		}
+
+		if !ok {
+			meta, ok, err = a.ExtractFromQA(asin)
+			if err != nil {
+				log.Error(err.Error())
+
+				continue
+			}
+		}
+
+		if !ok {
+			meta, ok, err = a.ExtractFromProduct(asin)
+			if err != nil {
+				log.Error(err.Error())
+
+				continue
+			}
+		}
+
+		if ok {
+			fmt.Println(meta.Title)
+		}
 	}
-
-	fmt.Println(urlList)
-}
-
-func TestSearchThroughProductQA(t *testing.T) {
-	b := browser.NewBrowser()
-
-	urlList, err := searchThroughProductQA("B004K8K7MO", b)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	fmt.Println(urlList)
-}
-
-func TestExtractPropByGoogleCache(t *testing.T) {
-	proxies := proxy.NewProxies([]string{
-		"http://emiles01:xVypbJnv@51.89.10.102:29842",
-		"http://emiles01:xVypbJnv@51.89.130.34:29842",
-		"http://emiles01:xVypbJnv@51.83.17.111:29842",
-		"http://emiles01:xVypbJnv@51.89.31.32:29842",
-		"http://emiles01:xVypbJnv@51.89.131.103:29842",
-	})
-
-	props, err := extractPropByGoogleCache("https://amazon.co.uk/Bluetooth-Autoradio-Mercedes-Sprinter-B-Klasse/dp/B07961DHKH", proxies)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	fmt.Println(props)
 }

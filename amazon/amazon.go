@@ -2,256 +2,41 @@ package amazon
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/call2mall/catalog/browser"
+	. "github.com/call2mall/catalog/browser"
 	"github.com/call2mall/catalog/curl"
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/proxy"
-	"github.com/call2mall/catalog/search"
-	"github.com/call2mall/catalog/search/lycos"
-	"github.com/call2mall/catalog/search/qwant"
-	"github.com/call2mall/catalog/search/swisscows"
-	"github.com/call2mall/catalog/translate"
 	"github.com/call2mall/catalog/user_agent"
 	"github.com/chromedp/chromedp"
-	. "github.com/pkg/errors"
+	log "github.com/leprosus/golang-log"
+	"github.com/pkg/errors"
+	"math/rand"
 	"net/http"
 	"net/url"
-	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
 
-type Amazon struct{}
-
-func (a Amazon) FindPages(asin dao.ASIN, proxies *proxy.Proxies) (urlList []string, err error) {
-	s := search.NewSearch(proxies)
-	s.SearcherList([]search.Searcher{
-		lycos.Lycos{},
-		qwant.Qwant{},
-		swisscows.SwissCows{},
-	})
-
-	var (
-		domainsRegExp = regexp.MustCompile("^(www\\.)?amazon\\.(co\\.uk|com\\.au|co\\.jp|com\\.mx|ae|sa|de|it|fr|es|nl|se|sg|in|ca)$")
-		list          []string
-	)
-
-	list, err = s.Search(fmt.Sprintf("\"%s\"", asin))
-	if err != nil {
-		return
-	}
-
-	var (
-		urlData *url.URL
-		matches [][]string
-	)
-
-	b := browser.NewBrowser()
-	proxyAddr, ok := proxies.Next()
-	if ok {
-		err = b.Proxy(proxyAddr)
-		if err != nil {
-			return
-		}
-	}
-
-	for _, urlRaw := range list {
-		urlData, err = url.Parse(urlRaw)
-		if err != nil {
-			return
-		}
-
-		matches = domainsRegExp.FindAllStringSubmatch(urlData.Host, -1)
-		if len(matches) == 0 {
-			continue
-		}
-
-		if strings.Contains(urlData.Path, "/review/product/") {
-			urlRaw, ok, err = extractOriginFromProductReport(urlData, b)
-			if err != nil || !ok {
-				continue
-			}
-		} else if !strings.Contains(urlData.Path, "/dp/") {
-			continue
-		}
-
-		urlList = append(urlList, urlRaw)
-	}
-
-	if len(urlList) == 0 {
-		urlList, err = searchThroughProductReport(asin, b)
-		if err != nil {
-			return
-		}
-	}
-
-	if len(urlList) == 0 {
-		urlList, err = searchThroughProductQA(asin, b)
-		if err != nil {
-			return
-		}
-	}
-
-	return
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
-var domains = []string{
-	"amazon.ca",
-	"amazon.co.uk",
-	"amazon.com.au",
-	"amazon.co.jp",
-	"amazon.sg",
-	"amazon.nl",
-	"amazon.se",
-	"amazon.de",
-	"amazon.fr",
-	"amazon.es",
-	"amazon.com.mx",
-	"amazon.it",
-	"amazon.ae",
-	"amazon.sa",
-	"amazon.in",
+type Amazon struct {
+	domains []string
+
+	browser   *Browser
+	proxies   *proxy.Proxies
+	userAgent *user_agent.Rotator
 }
 
-func searchThroughProductReport(asin dao.ASIN, b *browser.Browser) (urlList []string, err error) {
-	var (
-		urlData url.URL
-
-		resUrl string
-		ok     bool
-
-		pos int
-	)
-
-	for _, host := range domains {
-		urlData = url.URL{
-			Scheme: "https",
-			Host:   host,
-			Path:   fmt.Sprintf("/review/product/%s", asin),
-		}
-
-		resUrl, ok, err = extractOriginFromProductReport(&urlData, b)
-		if err != nil {
-			return
-		}
-
-		if ok {
-			pos = strings.Index(resUrl, "/ref=")
-			if pos > -1 {
-				resUrl = resUrl[0:pos]
-			}
-
-			urlList = append(urlList, resUrl)
-		}
-	}
-
-	return
-}
-
-func extractOriginFromProductReport(urlData *url.URL, b *browser.Browser) (resUrl string, ok bool, err error) {
-	var html string
-	html, err = b.GetHtml(urlData.String())
-	if err != nil {
-		return
-	}
-
-	reader := strings.NewReader(html)
-
-	var doc *goquery.Document
-	doc, err = goquery.NewDocumentFromReader(reader)
-	if err != nil {
-		return
-	}
-
-	resUrl, ok = doc.Find(".product-info a.a-link-normal[href]").First().Attr("href")
-
-	var resData *url.URL
-	resData, err = url.Parse(resUrl)
-	if err != nil {
-		return
-	}
-
-	if !strings.HasPrefix(resUrl, "http") {
-		resData = urlData.ResolveReference(resData)
-	}
-
-	resData.RawQuery = url.Values{}.Encode()
-
-	resUrl = resData.String()
-
-	return
-}
-
-func searchThroughProductQA(asin dao.ASIN, b *browser.Browser) (urlList []string, err error) {
-	var (
-		urlData url.URL
-
-		resUrl string
-		ok     bool
-
-		pos int
-	)
-
-	for _, host := range domains {
-		urlData = url.URL{
-			Scheme: "https",
-			Host:   host,
-			Path:   fmt.Sprintf("/ask/questions/asin/%s", asin),
-		}
-
-		resUrl, ok, err = extractOriginFromAQ(&urlData, b)
-		if err != nil {
-			return
-		}
-
-		if ok {
-			pos = strings.Index(resUrl, "/ref=")
-			if pos > -1 {
-				resUrl = resUrl[0:pos]
-			}
-
-			urlList = append(urlList, resUrl)
-		}
-	}
-
-	return
-}
-
-func extractOriginFromAQ(urlData *url.URL, b *browser.Browser) (resUrl string, ok bool, err error) {
-	var html string
-	html, err = b.GetHtml(urlData.String())
-	if err != nil {
-		return
-	}
-
-	reader := strings.NewReader(html)
-
-	var doc *goquery.Document
-	doc, err = goquery.NewDocumentFromReader(reader)
-	if err != nil {
-		return
-	}
-
-	resUrl, ok = doc.Find(".askProductDescription a.a-size-large.a-link-normal[href]").First().Attr("href")
-
-	var resData *url.URL
-	resData, err = url.Parse(resUrl)
-	if err != nil {
-		return
-	}
-
-	if !strings.HasPrefix(resUrl, "http") {
-		resData = urlData.ResolveReference(resData)
-	}
-
-	resData.RawQuery = url.Values{}.Encode()
-
-	resUrl = resData.String()
-
-	return
+type Meta struct {
+	Url      string
+	Title    string
+	Category []string
+	Bytes    []byte
 }
 
 var (
@@ -261,129 +46,47 @@ var (
 	DetectedAutomation = errors.New("detected automation")
 )
 
-func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props dao.ASINProps, err error) {
-	var (
-		l8n           string
-		withL8nSwitch bool
-		withTranslate bool
+func NewAmazon() (a *Amazon, err error) {
+	browser := NewBrowser()
+	browser.AddAcceptedResponseCode(503)
 
-		detectedL8n translate.L8n
-	)
-	_, l8n, withL8nSwitch, err = translate.DetectL8nByAmazonUrl(amazonUrl)
+	var proxies *proxy.Proxies
+	proxies, err = proxy.GetInstance()
 	if err != nil {
 		return
 	}
 
-	withTranslate = l8n != "en"
+	a = &Amazon{
+		domains: []string{
+			"amazon.com",
+			"amazon.ca",
+			"amazon.co.uk",
+			"amazon.com.au",
+			"amazon.sg",
+		},
 
-	var urlData *url.URL
-	urlData, err = url.Parse(amazonUrl)
-	if err != nil {
-		return
+		browser:   browser,
+		proxies:   proxies,
+		userAgent: user_agent.GetInstance(),
 	}
 
-	if withL8nSwitch {
-		urlData.RawQuery = url.Values{
-			"language": []string{"en"},
-		}.Encode()
-	}
+	return
+}
 
-	proxyAddr, ok := proxies.Next()
-	if !ok {
-		err = proxy.NonProxy
-
-		return
-	}
-
-	b := browser.NewBrowser()
-	err = b.Proxy(proxyAddr)
-	if err != nil {
-		return
-	}
-
-	var ua user_agent.UserAgent
-	ua, ok = user_agent.GetInstance().Next()
-	if ok {
-		b.UserAgent(ua.Header())
-	}
-
-	var (
-		html                 string
-		isAutomationDetected bool
-	)
-	err = b.Run(amazonUrl, []chromedp.Action{
-		chromedp.ActionFunc(func(ctx context.Context) (err error) {
-			go func() {
-				var html string
-				err = chromedp.OuterHTML("html", &html).Do(ctx)
-				if err != nil {
-					return
-				}
-
-				if strings.Contains(html, "ref=cs_503_link") {
-					isAutomationDetected = true
-
-					b.Cancel()
-				}
-			}()
-
-			return
-		}),
-		chromedp.Sleep(time.Second),
-		chromedp.OuterHTML("html", &html),
-	})
-
-	if isAutomationDetected {
-		html, err = extractPropByGoogleCache(amazonUrl, proxies)
-		if err != nil {
-			err = Wrap(err, fmt.Sprintf("amazon web-site `%s` responses: %v", urlData.Host, DetectedAutomation))
-
-			return
-		}
-	}
-
-	if err != nil {
-		return
-	}
-
-	reader := strings.NewReader(html)
-
+func (a *Amazon) ExtractMeta(html string) (meta Meta, err error) {
 	var doc *goquery.Document
-	doc, err = goquery.NewDocumentFromReader(reader)
+	doc, err = goquery.NewDocumentFromReader(strings.NewReader(html))
 	if err != nil {
 		return
 	}
 
-	props.Title = doc.Find("#title span").First().Text()
-	props.Title = strings.TrimSpace(props.Title)
-	props.Title = strings.Replace(props.Title, " ", "", -1)
-	if len(props.Title) == 0 {
+	meta.Title = doc.Find("#title span").First().Text()
+	meta.Title = strings.TrimSpace(meta.Title)
+	meta.Title = strings.Replace(meta.Title, " ", "", -1)
+	if len(meta.Title) == 0 {
 		err = NoProductTitle
 
 		return
-	}
-
-	if !withTranslate {
-		detectedL8n = translate.DetectL8n(props.Title)
-		if detectedL8n != translate.EnglishL8n {
-			withTranslate = true
-
-			l8n = string(detectedL8n)
-		}
-	}
-
-	if withTranslate {
-		tr := translate.NewTranslate(proxies)
-		props.Title, err = tr.Translate(props.Title, l8n, "en")
-		if err != nil {
-			return
-		}
-
-		if len(props.Title) == 0 {
-			err = NoProductTitle
-
-			return
-		}
 	}
 
 	doc.Find("#wayfinding-breadcrumbs_feature_div ul li a").Each(func(i int, sel *goquery.Selection) {
@@ -391,45 +94,18 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 		category = strings.TrimSpace(category)
 		category = strings.ReplaceAll(category, "&amp;", "and")
 
-		fmt.Println(category)
+		category = strings.ToUpper(category[0:1]) + category[1:]
+
+		meta.Category = append(meta.Category, category)
 	})
 
-	props.Category.Name = doc.Find("#wayfinding-breadcrumbs_feature_div ul li:first-of-type a").First().Text()
-	props.Category.Name = strings.TrimSpace(props.Category.Name)
-	props.Category.Name = strings.ReplaceAll(props.Category.Name, "&amp;", "and")
-	if len(props.Category.Name) == 0 {
+	if len(meta.Category) == 0 {
 		err = NoProductCategory
 
 		return
-	} else if !withTranslate {
-		detectedL8n = translate.DetectL8n(props.Category.Name)
-		if detectedL8n != translate.EnglishL8n {
-			withTranslate = true
-
-			l8n = string(detectedL8n)
-		}
 	}
 
-	if withTranslate {
-		tr := translate.NewTranslate(proxies)
-		props.Category.Name, err = tr.Translate(props.Category.Name, l8n, "en")
-		if err != nil {
-			return
-		}
-
-		if len(props.Category.Name) == 0 {
-			err = NoProductCategory
-
-			return
-		}
-	}
-
-	if len(props.Category.Name) > 1 {
-		props.Category.Name = strings.ToUpper(props.Category.Name[0:1]) + props.Category.Name[1:]
-	}
-
-	var photoUrl string
-	photoUrl, ok = doc.Find("#imgTagWrapperId img[src]").First().Attr("src")
+	photoUrl, ok := doc.Find("#imgTagWrapperId img[src]").First().Attr("src")
 	if !ok {
 		err = NoProductImage
 
@@ -439,14 +115,22 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 	header := http.Header{}
 	header.Add("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36")
 
-	var state uint
-	props.Image.Bytes, state, err = curl.LoadByUrl(photoUrl, header, proxies)
+	var proxies *proxy.Proxies
+	proxies, err = proxy.GetInstance()
 	if err != nil {
-		err = fmt.Errorf("can't load image from `%s`: %v", amazonUrl, err)
+		return
+	}
 
+	var state uint
+	meta.Bytes, state, err = curl.LoadByUrl(photoUrl, header, proxies)
+	if err != nil {
 		return
 	} else if state != 200 {
-		err = fmt.Errorf("can't load image from `%s` because the server returned unexpected state", amazonUrl)
+		err = fmt.Errorf("can't load image from `%s` because the server returned unexpected state", photoUrl)
+
+		return
+	} else if len(meta.Bytes) == 0 {
+		err = fmt.Errorf("it returns zero-side image from `%s`", photoUrl)
 
 		return
 	}
@@ -454,27 +138,103 @@ func (a Amazon) ExtractProps(amazonUrl string, proxies *proxy.Proxies) (props da
 	return
 }
 
-func extractPropByGoogleCache(amazonUrl string, proxies *proxy.Proxies) (html string, err error) {
-	b := browser.NewBrowser()
-	proxyAddr, ok := proxies.Next()
+func (a *Amazon) ExtractLink(html, query string) (link string, err error) {
+	var doc *goquery.Document
+	doc, err = goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		return
+	}
+
+	link, _ = doc.Find(query).First().Attr("href")
+
+	return
+}
+
+func (a *Amazon) NormLink(amazonUrl url.URL, link string) (linkUrl *url.URL, err error) {
+	linkUrl, err = url.Parse(link)
+	if err != nil {
+		return
+	}
+
+	if !strings.HasPrefix(link, "http") {
+		linkUrl = amazonUrl.ResolveReference(linkUrl)
+	}
+
+	linkUrl.RawQuery = url.Values{}.Encode()
+
+	return
+}
+
+func (a *Amazon) LoadAmazonPage(amazonUrl, referrerUrl url.URL) (html string, err error) {
+	a.browser.SetHeader("referer", referrerUrl.String())
+
+	userAgent, ok := a.userAgent.Next()
 	if ok {
-		err = b.Proxy(proxyAddr)
+		a.browser.UserAgent(userAgent.Header())
+	}
+
+	var proxyAddr string
+	proxyAddr, ok = a.proxies.Next()
+	if ok {
+		err = a.browser.Proxy(proxyAddr)
 		if err != nil {
 			return
 		}
 	}
 
-	queryUrl := url.URL{
+	err = a.browser.Run(amazonUrl.String(), []chromedp.Action{
+		chromedp.ActionFunc(func(ctx context.Context) (err error) {
+			go func() {
+				var html string
+				err = chromedp.OuterHTML("html", &html).Do(ctx)
+				if err != nil {
+					return
+				}
+
+				if strings.Contains(html, "ref=cs_503_link") {
+					err = DetectedAutomation
+
+					a.browser.Cancel()
+				}
+			}()
+
+			return
+		}),
+		chromedp.OuterHTML("html", &html),
+	})
+	if err == DetectedAutomation {
+		return a.LoadAmazonWithGoogle(amazonUrl)
+	}
+
+	return
+}
+
+func (a *Amazon) LoadAmazonWithGoogle(amazonUrl url.URL) (html string, err error) {
+	userAgent, ok := a.userAgent.Next()
+	if ok {
+		a.browser.UserAgent(userAgent.Header())
+	}
+
+	var proxyAddr string
+	proxyAddr, ok = a.proxies.Next()
+	if ok {
+		err = a.browser.Proxy(proxyAddr)
+		if err != nil {
+			return
+		}
+	}
+
+	googleUrl := url.URL{
 		Scheme: "https",
 		Host:   "www.google.com",
 		Path:   "search",
 		RawQuery: url.Values{
-			"q": []string{amazonUrl},
+			"q": []string{amazonUrl.String()},
 		}.Encode(),
 	}
 
 	var result string
-	err = b.Run(queryUrl.String(), []chromedp.Action{
+	err = a.browser.Run(googleUrl.String(), []chromedp.Action{
 		chromedp.Sleep(time.Second),
 		chromedp.WaitVisible("#search", chromedp.ByID),
 		chromedp.OuterHTML("html", &result),
@@ -483,10 +243,8 @@ func extractPropByGoogleCache(amazonUrl string, proxies *proxy.Proxies) (html st
 		return
 	}
 
-	reader := strings.NewReader(result)
-
 	var doc *goquery.Document
-	doc, err = goquery.NewDocumentFromReader(reader)
+	doc, err = goquery.NewDocumentFromReader(strings.NewReader(result))
 	if err != nil {
 		return
 	}
@@ -508,14 +266,140 @@ func extractPropByGoogleCache(amazonUrl string, proxies *proxy.Proxies) (html st
 		return
 	}
 
-	b.SetHeader("referer", queryUrl.String())
+	a.browser.SetHeader("referer", googleUrl.String())
 
-	err = b.Run(cachedUrl, []chromedp.Action{
+	err = a.browser.Run(cachedUrl, []chromedp.Action{
 		chromedp.Sleep(time.Second),
 		chromedp.OuterHTML("html", &html),
 	})
 	if err != nil {
 		return
+	}
+
+	return
+}
+
+func (a *Amazon) extractFromSocPage(asin dao.ASIN, pagePath, linkQuery string) (meta Meta, ok bool, err error) {
+	domains := a.domains
+	sort.Slice(domains, func(i, j int) bool {
+		return rand.Int31n(100) > 50
+	})
+
+	var (
+		referrerUrl, amazonUrl url.URL
+		html, link             string
+		linkUrl                *url.URL
+	)
+
+	for _, domain := range domains {
+		amazonUrl = url.URL{
+			Scheme: "https",
+			Host:   domain,
+			Path:   fmt.Sprintf(pagePath, asin),
+		}
+
+		referrerUrl = url.URL{
+			Scheme: "https",
+			Host:   "www.google.com",
+			Path:   "search",
+			RawQuery: url.Values{
+				"q": []string{string(asin)},
+			}.Encode(),
+		}
+
+		html, err = a.LoadAmazonPage(amazonUrl, referrerUrl)
+		if err != nil {
+			log.WarnFmt("Can't load page `%s`: %v", amazonUrl.String(), err)
+
+			continue
+		}
+
+		link, err = a.ExtractLink(html, linkQuery)
+		if err != nil {
+			log.WarnFmt("Can't extract the product URL `%s`: %v", amazonUrl.String(), err)
+
+			continue
+		}
+
+		linkUrl, err = a.NormLink(amazonUrl, link)
+		if err != nil {
+			log.WarnFmt("Can't normalize the product URL `%s`: %v", link, err)
+
+			continue
+		}
+
+		html, err = a.LoadAmazonPage(*linkUrl, amazonUrl)
+		if err != nil {
+			log.WarnFmt("Can't load page `%s`: %v", linkUrl.String(), err)
+
+			continue
+		}
+
+		meta, err = a.ExtractMeta(html)
+		if err != nil {
+			log.WarnFmt("Get error in parsing processing: %v", err)
+
+			continue
+		}
+
+		ok = true
+
+		break
+	}
+
+	return
+}
+
+func (a *Amazon) ExtractFromReview(asin dao.ASIN) (meta Meta, ok bool, err error) {
+	return a.extractFromSocPage(asin, "/review/product/%v/", ".product-info a.a-link-normal[href]")
+}
+
+func (a *Amazon) ExtractFromQA(asin dao.ASIN) (meta Meta, ok bool, err error) {
+	return a.extractFromSocPage(asin, "/ask/questions/asin/%v/", ".askProductDescription a.a-size-large.a-link-normal[href]")
+}
+
+func (a *Amazon) ExtractFromProduct(asin dao.ASIN) (meta Meta, ok bool, err error) {
+	domains := a.domains
+	sort.Slice(domains, func(i, j int) bool {
+		return rand.Int31n(100) > 50
+	})
+
+	var (
+		referrerUrl, amazonUrl url.URL
+		html                   string
+	)
+
+	for _, domain := range domains {
+		referrerUrl = url.URL{
+			Scheme: "https",
+			Host:   "www.google.com",
+			Path:   "search",
+			RawQuery: url.Values{
+				"q": []string{string(asin)},
+			}.Encode(),
+		}
+
+		amazonUrl = url.URL{
+			Scheme: "https",
+			Host:   domain,
+			Path:   fmt.Sprintf("gp/product/%v/", asin),
+		}
+
+		html, err = a.LoadAmazonPage(amazonUrl, referrerUrl)
+		if err != nil {
+			continue
+		}
+
+		meta, err = a.ExtractMeta(html)
+		if err != nil {
+			log.ErrorFmt("Get error in parsing processing: %v", err)
+
+			continue
+		}
+
+		ok = true
+
+		break
 	}
 
 	return

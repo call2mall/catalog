@@ -14,8 +14,15 @@ func init() {
 	_ = conn.InitSQL(config.String("psql.user"), config.String("psql.pass"), config.String("psql.database"), config.String("psql.host"), config.UInt32("psql.port"))
 }
 
-func TestGrab(t *testing.T) {
-	err := GrabUnits()
+func TestExportUnits(t *testing.T) {
+	err := ExportUnits()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRunGrabber(t *testing.T) {
+	err := RunGrabber(2)
 	if err != nil {
 		t.Fatal(err)
 	}
