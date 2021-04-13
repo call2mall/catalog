@@ -22,7 +22,7 @@ func TestExportUnits(t *testing.T) {
 }
 
 func TestRunGrabber(t *testing.T) {
-	err := RunGrabber(2)
+	err := RunGrabber(uint(config.UInt32("grabber.threads")))
 	if err != nil {
 		t.Fatal(err)
 	}

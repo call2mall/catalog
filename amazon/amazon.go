@@ -337,7 +337,7 @@ func (a *Amazon) extractFromSocPage(asin dao.ASIN, pagePath, linkQuery string) (
 
 		meta, err = a.ExtractMeta(html)
 		if err != nil {
-			log.WarnFmt("Get error in parsing processing: %v", err)
+			log.WarnFmt("Get error in parsing processing of URL `%s` for ASIN `%s`: %v", amazonUrl.String(), asin, err)
 
 			continue
 		}
@@ -392,7 +392,7 @@ func (a *Amazon) ExtractFromProduct(asin dao.ASIN) (meta Meta, ok bool, err erro
 
 		meta, err = a.ExtractMeta(html)
 		if err != nil {
-			log.ErrorFmt("Get error in parsing processing: %v", err)
+			log.WarnFmt("Get error in parsing processing of URL `%s` for ASIN `%s`: %v", amazonUrl.String(), asin, err)
 
 			continue
 		}
