@@ -179,8 +179,8 @@ func grabASIN(ch chan dao.ASIN) {
 
 		props dao.ASINProps
 
-		size    = config.UInt32("publisher.size")
-		dirPath = config.Path("publisher.path")
+		size    = config.UInt32("publisher.image.size")
+		dirPath = config.Path("publisher.image.path")
 
 		img      []byte
 		filePath string
