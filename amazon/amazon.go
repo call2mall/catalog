@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/call2mall/catalog/browser"
-	"github.com/call2mall/catalog/curl"
+	"github.com/call2mall/catalog/crawler"
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/proxy"
 	"github.com/call2mall/catalog/user_agent"
 	"github.com/chromedp/chromedp"
 	log "github.com/leprosus/golang-log"
 	"github.com/pkg/errors"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -121,15 +122,40 @@ func (a *Amazon) ExtractMeta(html string) (meta Meta, err error) {
 		return
 	}
 
-	var state uint
-	meta.Bytes, state, err = curl.LoadByUrl(photoUrl, header, proxies)
+	c := crawler.NewCrawler()
+	c.SetHeader(header)
+
+	var proxyAddr string
+	proxyAddr, ok = proxies.Next()
+	if ok {
+		err = c.SetProxy(proxyAddr)
+		if err != nil {
+			return
+		}
+	}
+
+	err = c.Request(http.MethodGet, photoUrl, nil)
 	if err != nil {
 		return
-	} else if state != 200 {
+	}
+
+	state := c.GetStatus()
+	if state != 200 {
 		err = fmt.Errorf("can't load image from `%s` because the server returned unexpected state", photoUrl)
 
 		return
-	} else if len(meta.Bytes) == 0 {
+	}
+
+	body := c.GetBody()
+	defer func() {
+		_ = body.Close()
+	}()
+	meta.Bytes, err = io.ReadAll(body)
+	if err != nil {
+		return
+	}
+
+	if len(meta.Bytes) == 0 {
 		err = fmt.Errorf("it returns zero-side image from `%s`", photoUrl)
 
 		return
