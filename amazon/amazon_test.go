@@ -18,71 +18,49 @@ func init() {
 	log.Path(config.Path("log.path"))
 }
 
-func TestParser(t *testing.T) {
+func TestExtractOne(t *testing.T) {
+	a := NewAmazon()
+
+	var (
+		meta Meta
+		ok   bool
+		err  error
+	)
+	meta, ok, err = a.Extract("B00009ZSXJ")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !ok {
+		t.Fatal("Extractor was not able to get meta data of the product")
+	}
+
+	fmt.Println(meta)
+}
+
+func TestExtractAll(t *testing.T) {
 	asinList, err := dao.GetAllASIN()
 	if err != nil {
 		t.Error(err)
 	}
 
+	a := NewAmazon()
+
 	var (
-		asin dao.ASIN
-		ch   = make(chan dao.ASIN)
-	)
-
-	for i := 0; i < 5; i++ {
-		go instance(ch)
-	}
-
-	for _, asin = range asinList {
-		ch <- asin
-	}
-}
-
-func instance(ch chan dao.ASIN) {
-	var (
-		asin dao.ASIN
-
 		meta Meta
 		ok   bool
-		err  error
-
-		a *Amazon
 	)
-	for asin = range ch {
-		a, err = NewAmazon()
+
+	for _, asin := range asinList {
+		meta, ok, err = a.Extract(asin)
 		if err != nil {
-			log.ErrorFmt("Can't init amazon handler: %v", err)
-
-			continue
-		}
-
-		meta, ok, err = a.ExtractFromReview(asin)
-		if err != nil {
-			log.Error(err.Error())
-
-			continue
+			t.Fatal(err)
 		}
 
 		if !ok {
-			meta, ok, err = a.ExtractFromQA(asin)
-			if err != nil {
-				log.Error(err.Error())
-
-				continue
-			}
+			continue
 		}
 
-		if !ok {
-			meta, ok, err = a.ExtractFromProduct(asin)
-			if err != nil {
-				log.Error(err.Error())
-
-				continue
-			}
-		}
-
-		if ok {
-			fmt.Println(meta.Title)
-		}
+		fmt.Println(meta)
 	}
 }

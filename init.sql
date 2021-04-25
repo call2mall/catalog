@@ -86,20 +86,21 @@ create unique index if not exists category_name_uix
 
 create table if not exists asin.list
 (
-    asin        varchar(64) not null
+    asin        varchar(64)   not null
         constraint list_pk
             primary key,
-    category_id int         null
+    url         varchar(1024) null,
+    category_id int           null
         constraint list_category_fk
             references asin.category
             on update cascade on delete set null,
-    title       text        null,
-    l8n         text        null,
-    image_hash  varchar(64) null
+    title       text          null,
+    l8n         text          null,
+    image_hash  varchar(64)   null
         constraint list_image_fk
             references asin.image
             on update cascade on delete set null,
-    timestamp   timestamp   not null default current_timestamp
+    timestamp   timestamp     not null default current_timestamp
 );
 
 create table if not exists asin.grabber_queue

@@ -2,7 +2,7 @@ package dowloader
 
 import (
 	"context"
-	"github.com/call2mall/catalog/browser"
+	"github.com/call2mall/catalog/chrome"
 	"github.com/chromedp/cdproto/fetch"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
@@ -12,7 +12,7 @@ import (
 
 var TransferExpired = errors.New("transfer expired")
 
-func DownloadFromWetransfer(rawUrl, downloadDir string, b *browser.Browser) (err error) {
+func DownloadFromWetransfer(rawUrl, downloadDir string, b *chrome.Browser) (err error) {
 	var isExpired bool
 
 	err = b.Run(rawUrl, []chromedp.Action{

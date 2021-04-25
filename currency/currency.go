@@ -40,7 +40,7 @@ func GetFactor(from, to string) (factor float64, err error) {
 		c.SetHeader(header)
 
 		rawUrl := "https://www.cbr-xml-daily.ru/daily_json.js"
-		err = c.Request(http.MethodGet, rawUrl, nil)
+		err = c.Do(http.MethodGet, rawUrl, nil)
 		if err != nil {
 			return
 		}

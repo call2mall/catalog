@@ -2,7 +2,7 @@ package yahoo
 
 import (
 	"github.com/PuerkitoBio/goquery"
-	"github.com/call2mall/catalog/browser"
+	"github.com/call2mall/catalog/chrome"
 	"github.com/chromedp/chromedp"
 	"net/url"
 	"strings"
@@ -12,7 +12,7 @@ import (
 type Yahoo struct {
 }
 
-func (s Yahoo) Search(query string, b *browser.Browser) (urlList []string, err error) {
+func (s Yahoo) Search(query string, b *chrome.Browser) (urlList []string, err error) {
 	queryUrl := url.URL{
 		Scheme: "https",
 		Host:   "search.yahoo.com",

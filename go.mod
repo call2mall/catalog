@@ -12,6 +12,8 @@ require (
 	github.com/chromedp/chromedp v0.6.8
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/go-rod/rod v0.97.0
+	github.com/go-rod/stealth v0.3.0
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/jhillyerd/enmime v0.8.4 // indirect
 	github.com/leprosus/golang-config v1.1.2

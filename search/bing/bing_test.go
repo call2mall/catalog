@@ -2,13 +2,13 @@ package bing
 
 import (
 	"fmt"
-	"github.com/call2mall/catalog/browser"
+	"github.com/call2mall/catalog/chrome"
 	"testing"
 	"time"
 )
 
 func TestBingSearch(t *testing.T) {
-	b := browser.NewBrowser()
+	b := chrome.NewBrowser()
 
 	query := fmt.Sprintf("\"%s\"", "B07K3SS94V")
 

@@ -1,13 +1,13 @@
 package dowloader
 
 import (
-	"github.com/call2mall/catalog/browser"
+	"github.com/call2mall/catalog/chrome"
 	"testing"
 	"time"
 )
 
 func TestDownloadFromWetransfer(t *testing.T) {
-	b := browser.NewBrowser()
+	b := chrome.NewBrowser()
 	b.Timeout(2 * time.Minute)
 	b.Headless(false)
 

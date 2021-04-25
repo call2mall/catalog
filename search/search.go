@@ -2,7 +2,7 @@ package search
 
 import (
 	"errors"
-	"github.com/call2mall/catalog/browser"
+	"github.com/call2mall/catalog/chrome"
 	"github.com/call2mall/catalog/proxy"
 	"github.com/call2mall/catalog/search/bing"
 	"github.com/call2mall/catalog/search/duckduckgo"
@@ -16,7 +16,7 @@ import (
 )
 
 type Searcher interface {
-	Search(query string, b *browser.Browser) (urlList []string, err error)
+	Search(query string, b *chrome.Browser) (urlList []string, err error)
 }
 
 func GetAllSearcherList() (list []Searcher) {
@@ -79,7 +79,7 @@ func (s *Search) Search(query string) (urlList []string, err error) {
 		return
 	}
 
-	b := browser.NewBrowser()
+	b := chrome.NewBrowser()
 	err = b.Proxy(proxyAddr)
 	if err != nil {
 		return

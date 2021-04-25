@@ -20,6 +20,7 @@ type Crawler struct {
 func NewCrawler() (c *Crawler) {
 	c = &Crawler{
 		client: http.Client{},
+		header: http.Header{},
 	}
 
 	return
@@ -60,7 +61,7 @@ func (c *Crawler) SetContext(ctx context.Context) {
 	c.withCtx = true
 }
 
-func (c *Crawler) Request(method, rawUrl string, body io.Reader) (err error) {
+func (c *Crawler) Do(method, rawUrl string, body io.Reader) (err error) {
 	if c.withCtx {
 		c.req, err = http.NewRequestWithContext(c.ctx, method, rawUrl, body)
 	} else {
@@ -78,6 +79,14 @@ func (c *Crawler) Request(method, rawUrl string, body io.Reader) (err error) {
 	}
 
 	return
+}
+
+func (c *Crawler) GetRequest() (req *http.Request) {
+	return c.req
+}
+
+func (c *Crawler) GetResponse() (res *http.Response) {
+	return c.res
 }
 
 func (c *Crawler) GetStatus() (status uint) {

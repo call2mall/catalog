@@ -2,12 +2,12 @@ package lycos
 
 import (
 	"fmt"
-	"github.com/call2mall/catalog/browser"
+	"github.com/call2mall/catalog/chrome"
 	"testing"
 )
 
 func TestLycosSearch(t *testing.T) {
-	b := browser.NewBrowser()
+	b := chrome.NewBrowser()
 	err := b.Proxy("http://emiles01:xVypbJnv@51.89.130.34:29842")
 	if err != nil {
 		t.Error(err)

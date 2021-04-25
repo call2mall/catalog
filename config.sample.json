@@ -37,6 +37,6 @@
       "size": 200,
       "path": "./static/photo"
     },
-    "threads": 5
+    "headless": true
   }
 }

@@ -125,6 +125,7 @@ type ASINProps struct {
 }
 
 type ASINMeta struct {
+	Url       string
 	Category  Category
 	Title     string
 	L8n       string
@@ -133,7 +134,7 @@ type ASINMeta struct {
 
 func GetProps(asin ASIN) (props ASINProps, err error) {
 	err = conn.WithSQL(func(tx pgx.Tx) (err error) {
-		query := `select c.id, c.name, l.title, l.l8n, i.bytes, i.hash 
+		query := `select c.id, c.name, l.url, l.title, l.l8n, i.bytes, i.hash 
 					from asin.list l 
 					join asin.image i on l.image_hash = i.hash
 					join asin.category c on l.category_id = c.id
@@ -146,7 +147,7 @@ func GetProps(asin ASIN) (props ASINProps, err error) {
 			asinL8n sql.NullString
 		)
 		err = tx.QueryRow(context.Background(), query, asin).Scan(&category.Id, &category.Name,
-			&props.Title, &asinL8n, &image.Bytes, &props.ImageHash)
+			&props.Url, &props.Title, &asinL8n, &image.Bytes, &props.ImageHash)
 		if err == pgx.ErrNoRows {
 			err = nil
 
@@ -167,28 +168,28 @@ func GetProps(asin ASIN) (props ASINProps, err error) {
 	return
 }
 
-func (af ASINProps) Store() (err error) {
+func (props ASINProps) Store() (err error) {
 	err = conn.WithSQL(func(tx pgx.Tx) (err error) {
 		var categoryId uint32
-		categoryId, err = af.Category.store(tx)
+		categoryId, err = props.Category.store(tx)
 		if err != nil {
 			return
 		}
 
-		err = af.Image.store(tx)
+		err = props.Image.store(tx)
 		if err != nil {
 			return
 		}
 
-		upd := `update asin.list set category_id = $2, title = $3, l8n = $4, image_hash = $5 where asin = $1;`
+		upd := `update asin.list set url = $2, category_id = $3, title = $4, l8n = $5, image_hash = $6 where asin = $1;`
 
-		_, err = tx.Exec(context.Background(), upd, af.ASIN, categoryId, sql.NullString{
-			String: af.Title,
-			Valid:  len(af.Title) > 0,
+		_, err = tx.Exec(context.Background(), upd, props.ASIN, props.Url, categoryId, sql.NullString{
+			String: props.Title,
+			Valid:  len(props.Title) > 0,
 		}, sql.NullString{
-			String: af.L8n,
-			Valid:  len(af.L8n) > 0,
-		}, af.Image.Hash())
+			String: props.L8n,
+			Valid:  len(props.L8n) > 0,
+		}, props.Image.Hash())
 
 		return
 	})

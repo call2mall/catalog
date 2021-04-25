@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/call2mall/catalog/amazon"
-	"github.com/call2mall/catalog/browser"
+	"github.com/call2mall/catalog/chrome"
 	"github.com/call2mall/catalog/dao"
 	"github.com/call2mall/catalog/dowloader"
 	"github.com/call2mall/catalog/grabber/extractor"
@@ -61,7 +61,7 @@ func ExportUnits() (err error) {
 		}
 	}()
 
-	b := browser.NewBrowser()
+	b := chrome.NewBrowser()
 	b.Timeout(2 * time.Minute)
 
 	err = dowloader.DownloadFromWetransfer(srcUrl, dstPath, b)
@@ -111,21 +111,15 @@ func ExportUnits() (err error) {
 	return
 }
 
-func RunGrabber(threads uint) (err error) {
+func RunGrabber() (err error) {
 	go defrostQueue()
-
-	var ch chan dao.ASIN
-	ch = runThreads(threads)
-	if err != nil {
-		return
-	}
 
 	var (
 		asinList dao.ASINList
 		asin     dao.ASIN
 	)
 	for {
-		asinList, err = dao.PopFromGrabberQueue(threads)
+		asinList, err = dao.PopFromGrabberQueue(1)
 		if err != nil {
 			log.CriticalFmt("Can't pop new ASIN to grabber its pages: %v", err)
 
@@ -139,7 +133,12 @@ func RunGrabber(threads uint) (err error) {
 		}
 
 		for _, asin = range asinList {
-			ch <- asin
+			err = grabASIN(asin)
+			if err != nil {
+				log.ErrorFmt("Can't grab data for ASIN %v: %v", asin, err)
+
+				continue
+			}
 		}
 	}
 }
@@ -158,151 +157,121 @@ func defrostQueue() {
 	}
 }
 
-func runThreads(threads uint) (ch chan dao.ASIN) {
-	ch = make(chan dao.ASIN, threads)
-
-	var i uint
-	for i = 0; i < threads; i++ {
-		go grabASIN(ch)
-	}
-
-	return
-}
-
-func grabASIN(ch chan dao.ASIN) {
+func grabASIN(asin dao.ASIN) (err error) {
 	var (
-		err error
-
 		a    *amazon.Amazon
 		meta amazon.Meta
 		ok   bool
 
 		props dao.ASINProps
 
-		size    = config.UInt32("publisher.image.size")
-		dirPath = config.Path("publisher.image.path")
+		size    = config.UInt32("grabber.image.size")
+		dirPath = config.Path("grabber.image.path")
 
 		img      []byte
 		filePath string
 	)
 
-	for asin := range ch {
-		func() {
-			var success = false
+	func() {
+		var success = false
 
-			defer func() {
-				if !success {
-					e := asin.MarkGrabberAs(dao.Fail)
-					if e != nil {
-						err = errors.Wrap(err, e.Error())
+		defer func() {
+			if !success {
+				e := asin.MarkGrabberAs(dao.Fail)
+				if e != nil {
+					err = errors.Wrap(err, e.Error())
 
-						log.Warn(err.Error())
-					}
-				}
-			}()
-
-			log.DebugFmt("It is searching page for ASIN `%s`", asin)
-
-			a, err = amazon.NewAmazon()
-			if err != nil {
-				log.ErrorFmt("Can't init amazon builder: %v", err)
-
-				return
-			}
-
-			meta, ok, err = a.ExtractFromReview(asin)
-			if err != nil {
-				log.Error(err.Error())
-
-				return
-			}
-
-			if !ok {
-				meta, ok, err = a.ExtractFromQA(asin)
-				if err != nil {
-					log.Error(err.Error())
-
-					return
+					log.Warn(err.Error())
 				}
 			}
-
-			if !ok {
-				meta, ok, err = a.ExtractFromProduct(asin)
-				if err != nil {
-					log.Error(err.Error())
-
-					return
-				}
-			}
-
-			if !ok {
-				log.WarnFmt("Can't parse ASIN `%s`", asin)
-
-				return
-			}
-
-			props = dao.ASINProps{
-				ASIN: asin,
-				Image: dao.Image{
-					Bytes: meta.Bytes,
-				},
-				ASINMeta: dao.ASINMeta{
-					Category: dao.Category{
-						Name: meta.Category,
-					},
-					Title: meta.Title,
-				},
-			}
-
-			err = props.Store()
-			if err != nil {
-				log.ErrorFmt("Can't store ASIN `%s`: %v", asin, err)
-
-				return
-			}
-
-			img, err = prepareImage(props.Image.Bytes, size)
-			if err != nil {
-				log.ErrorFmt("Can't prepare image for ASIN `%s`: %v", asin, err)
-
-				return
-			}
-
-			filePath = asin.FilePath(dirPath)
-
-			err = os.MkdirAll(filepath.Dir(filePath), 0755)
-			if err != nil {
-				log.ErrorFmt("Can't create directory `%s` for ASIN `%s`: %v", filepath.Dir(filePath), asin, err)
-
-				return
-			}
-
-			err = os.WriteFile(filePath, img, 0666)
-			if err != nil {
-				log.ErrorFmt("Can't write image `%s` for ASIN `%s`: %v", filePath, asin, err)
-
-				return
-			}
-
-			err = asin.Publish()
-			if err != nil {
-				log.ErrorFmt("Can't publish ASIN `%s`: %v", asin, err)
-
-				return
-			}
-
-			success = true
-
-			err = asin.MarkGrabberAs(dao.Done)
-			if err != nil {
-				log.ErrorFmt("Can't set status as `done` of grabber queue task for ASIN `%s`: %v", asin, err)
-
-				return
-			}
-
-			log.DebugFmt("Page for ASIN `%s` is handled", asin)
 		}()
-	}
+
+		log.DebugFmt("It is searching page for ASIN `%s`", asin)
+
+		a = amazon.NewAmazon()
+		if err != nil {
+			log.ErrorFmt("Can't init amazon builder: %v", err)
+
+			return
+		}
+
+		meta, ok, err = a.Extract(asin)
+		if !ok && err != nil {
+			log.Error(err.Error())
+
+			return
+		}
+
+		if !ok {
+			log.WarnFmt("Can't parse ASIN `%s`", asin)
+
+			return
+		}
+
+		props = dao.ASINProps{
+			ASIN: asin,
+			Image: dao.Image{
+				Bytes: meta.Bytes,
+			},
+			ASINMeta: dao.ASINMeta{
+				Url: meta.Url,
+				Category: dao.Category{
+					Name: meta.Category,
+				},
+				Title: meta.Title,
+			},
+		}
+
+		err = props.Store()
+		if err != nil {
+			log.ErrorFmt("Can't store ASIN `%s`: %v", asin, err)
+
+			return
+		}
+
+		img, err = prepareImage(props.Image.Bytes, size)
+		if err != nil {
+			log.ErrorFmt("Can't prepare image for ASIN `%s`: %v", asin, err)
+
+			return
+		}
+
+		filePath = asin.FilePath(dirPath)
+
+		err = os.MkdirAll(filepath.Dir(filePath), 0755)
+		if err != nil {
+			log.ErrorFmt("Can't create directory `%s` for ASIN `%s`: %v", filepath.Dir(filePath), asin, err)
+
+			return
+		}
+
+		err = os.WriteFile(filePath, img, 0666)
+		if err != nil {
+			log.ErrorFmt("Can't write image `%s` for ASIN `%s`: %v", filePath, asin, err)
+
+			return
+		}
+
+		err = asin.Publish()
+		if err != nil {
+			log.ErrorFmt("Can't publish ASIN `%s`: %v", asin, err)
+
+			return
+		}
+
+		success = true
+
+		err = asin.MarkGrabberAs(dao.Done)
+		if err != nil {
+			log.ErrorFmt("Can't set status as `done` of grabber queue task for ASIN `%s`: %v", asin, err)
+
+			return
+		}
+
+		log.DebugFmt("Page for ASIN `%s` is handled", asin)
+	}()
+
+	return
 }
 
 func prepareImage(in []byte, size uint32) (out []byte, err error) {
