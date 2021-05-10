@@ -8,7 +8,7 @@ import (
 )
 
 func TestGoogleSearch(t *testing.T) {
-	b := chrome.NewBrowser()
+	b := chrome.New()
 
 	query := fmt.Sprintf("\"%s\"", "B07K3SS94V")
 

@@ -17,7 +17,7 @@ type Crawler struct {
 	res     *http.Response
 }
 
-func NewCrawler() (c *Crawler) {
+func New() (c *Crawler) {
 	c = &Crawler{
 		client: http.Client{},
 		header: http.Header{},

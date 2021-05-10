@@ -7,7 +7,7 @@ import (
 )
 
 func TestDownloadFromWetransfer(t *testing.T) {
-	b := chrome.NewBrowser()
+	b := chrome.New()
 	b.Timeout(2 * time.Minute)
 	b.Headless(false)
 

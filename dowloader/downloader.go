@@ -12,7 +12,7 @@ import (
 
 var TransferExpired = errors.New("transfer expired")
 
-func DownloadFromWetransfer(rawUrl, downloadDir string, b *chrome.Browser) (err error) {
+func DownloadFromWetransfer(rawUrl, downloadDir string, b *chrome.Chrome) (err error) {
 	var isExpired bool
 
 	err = b.Run(rawUrl, []chromedp.Action{

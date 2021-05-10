@@ -16,7 +16,7 @@ import (
 )
 
 type Searcher interface {
-	Search(query string, b *chrome.Browser) (urlList []string, err error)
+	Search(query string, b *chrome.Chrome) (urlList []string, err error)
 }
 
 func GetAllSearcherList() (list []Searcher) {
@@ -79,7 +79,7 @@ func (s *Search) Search(query string) (urlList []string, err error) {
 		return
 	}
 
-	b := chrome.NewBrowser()
+	b := chrome.New()
 	err = b.Proxy(proxyAddr)
 	if err != nil {
 		return

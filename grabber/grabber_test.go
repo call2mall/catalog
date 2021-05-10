@@ -20,10 +20,3 @@ func TestExportUnits(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-func TestRunGrabber(t *testing.T) {
-	err := RunGrabber()
-	if err != nil {
-		t.Fatal(err)
-	}
-}

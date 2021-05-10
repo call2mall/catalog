@@ -30,7 +30,7 @@ func GetFactor(from, to string) (factor float64, err error) {
 	if time.Now().After(lastTime) {
 		lastTime = time.Now().Add(refreshPeriod)
 
-		c := crawler.NewCrawler()
+		c := crawler.New()
 
 		header := http.Header{}
 		header.Add("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36")

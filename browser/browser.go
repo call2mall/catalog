@@ -31,7 +31,7 @@ type Tab struct {
 	cancelFunc func()
 }
 
-func NewBrowser() (c *Browser) {
+func New() (c *Browser) {
 	return &Browser{
 		tab:  &Tab{},
 		once: &sync.Once{},

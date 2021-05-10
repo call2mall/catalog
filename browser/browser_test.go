@@ -9,7 +9,7 @@ import (
 func TestBrowser(t *testing.T) {
 	source := "Как же всё заебало"
 
-	b := NewBrowser()
+	b := New()
 	b.Headless(false)
 	b.WithDevTools(true)
 	b.WithTrace(true)

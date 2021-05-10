@@ -12,7 +12,7 @@ import (
 type Qwant struct {
 }
 
-func (s Qwant) Search(query string, b *chrome.Browser) (urlList []string, err error) {
+func (s Qwant) Search(query string, b *chrome.Chrome) (urlList []string, err error) {
 	queryUrl := url.URL{
 		Scheme: "https",
 		Host:   "www.qwant.com",

@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-type Browser struct {
+type Chrome struct {
 	isHeadless bool
 
 	withProxy bool
@@ -39,8 +39,8 @@ type Browser struct {
 	acceptedCodes map[uint32]interface{}
 }
 
-func NewBrowser() (c *Browser) {
-	return &Browser{
+func New() (c *Chrome) {
+	return &Chrome{
 		isHeadless: true,
 		timeout:    time.Minute,
 		headers: map[string]interface{}{
@@ -54,7 +54,7 @@ func NewBrowser() (c *Browser) {
 	}
 }
 
-func (b *Browser) Proxy(proxyAddr string) (err error) {
+func (b *Chrome) Proxy(proxyAddr string) (err error) {
 	if b.withProxy {
 		return
 	}
@@ -76,29 +76,29 @@ func (b *Browser) Proxy(proxyAddr string) (err error) {
 	return
 }
 
-func (b *Browser) UserAgent(userAgent string) {
+func (b *Chrome) UserAgent(userAgent string) {
 	b.SetHeader("user-agent", userAgent)
 }
 
-func (b *Browser) SetHeader(header, value string) {
+func (b *Chrome) SetHeader(header, value string) {
 	b.headers[header] = value
 }
 
-func (b *Browser) AddAcceptedResponseCode(codes ...uint32) {
+func (b *Chrome) AddAcceptedResponseCode(codes ...uint32) {
 	for _, code := range codes {
 		b.acceptedCodes[code] = nil
 	}
 }
 
-func (b *Browser) Timeout(timeout time.Duration) {
+func (b *Chrome) Timeout(timeout time.Duration) {
 	b.timeout = timeout
 }
 
-func (b *Browser) Headless(isHeadless bool) {
+func (b *Chrome) Headless(isHeadless bool) {
 	b.isHeadless = isHeadless
 }
 
-func (b *Browser) LastScreenshot(path string) (err error) {
+func (b *Chrome) LastScreenshot(path string) (err error) {
 	b.path, err = filepath.Abs(path)
 	if err != nil {
 		return
@@ -112,13 +112,13 @@ func (b *Browser) LastScreenshot(path string) (err error) {
 	return
 }
 
-func (b *Browser) Cancel() {
+func (b *Chrome) Cancel() {
 	b.cancel()
 
 	return
 }
 
-func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
+func (b *Chrome) Run(rawUrl string, actions []chromedp.Action) (err error) {
 	opts := chromedp.DefaultExecAllocatorOptions[:]
 
 	if b.withProxy {
@@ -226,7 +226,6 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 						return
 					}
 
-					println("HERE")
 					time.Sleep(100 * time.Millisecond)
 				}
 			}()
@@ -247,7 +246,7 @@ func (b *Browser) Run(rawUrl string, actions []chromedp.Action) (err error) {
 	return
 }
 
-func (b *Browser) GetHtml(rawUrl string) (html string, err error) {
+func (b *Chrome) GetHtml(rawUrl string) (html string, err error) {
 	err = b.Run(rawUrl, []chromedp.Action{
 		chromedp.OuterHTML("html", &html),
 	})
@@ -255,7 +254,7 @@ func (b *Browser) GetHtml(rawUrl string) (html string, err error) {
 	return
 }
 
-func (b *Browser) MakeFullScreenshot(rawUrl string, quality int64) (bs []byte, err error) {
+func (b *Chrome) MakeFullScreenshot(rawUrl string, quality int64) (bs []byte, err error) {
 	err = b.Run(rawUrl, FullScreenshot(quality, &bs))
 
 	return

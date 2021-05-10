@@ -12,7 +12,7 @@ import (
 type Google struct {
 }
 
-func (s Google) Search(query string, b *chrome.Browser) (urlList []string, err error) {
+func (s Google) Search(query string, b *chrome.Chrome) (urlList []string, err error) {
 	queryUrl := url.URL{
 		Scheme: "https",
 		Host:   "www.google.com",

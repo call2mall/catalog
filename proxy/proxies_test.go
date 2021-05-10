@@ -59,7 +59,6 @@ func TestCheckProxy(t *testing.T) {
 			t.Fatal("Proxy.Next return unexpected flag")
 		}
 
-		println("check", addr)
 		if !CheckProxy(addr) {
 			t.Fatal("CheckProxy return unexpected result")
 		}

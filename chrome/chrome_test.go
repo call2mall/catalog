@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestBrowser(t *testing.T) {
+func TestChrome(t *testing.T) {
 	rawUrl := "https://www.amazon.de/review/product/B07Q3S8BKF"
-	b := NewBrowser()
+	b := New()
 	b.Headless(false)
 	err := b.Proxy("http://emiles01:xVypbJnv@51.89.130.34:29842")
 	if err != nil {
@@ -27,7 +27,7 @@ func TestBrowser(t *testing.T) {
 
 func TestFullScreenshot(t *testing.T) {
 	rawUrl := "https://www.amazon.de/review/product/B07Q3S8BKF"
-	b := NewBrowser()
+	b := New()
 	b.Headless(false)
 	err := b.Proxy("http://emiles01:xVypbJnv@51.89.130.34:29842")
 	if err != nil {

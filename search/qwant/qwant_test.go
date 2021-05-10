@@ -7,7 +7,7 @@ import (
 )
 
 func TestQwantSearch(t *testing.T) {
-	b := chrome.NewBrowser()
+	b := chrome.New()
 	err := b.Proxy("http://emiles01:xVypbJnv@51.89.130.34:29842")
 	if err != nil {
 		t.Error(err)

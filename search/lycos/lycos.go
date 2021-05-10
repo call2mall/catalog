@@ -12,7 +12,7 @@ import (
 type Lycos struct {
 }
 
-func (s Lycos) Search(query string, b *chrome.Browser) (urlList []string, err error) {
+func (s Lycos) Search(query string, b *chrome.Chrome) (urlList []string, err error) {
 	queryUrl := url.URL{
 		Scheme: "https",
 		Host:   "search3.lycos.com",
