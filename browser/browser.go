@@ -5,15 +5,15 @@ import (
 	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/stealth"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type Browser struct {
-	isInit   bool
+	isInit   uint32
 	once     *sync.Once
 	launcher *launcher.Launcher
 	browser  *rod.Browser
-	tab      *Tab
 
 	isHeadless     bool
 	withDevTools   bool
@@ -33,7 +33,6 @@ type Tab struct {
 
 func New() (c *Browser) {
 	return &Browser{
-		tab:  &Tab{},
 		once: &sync.Once{},
 
 		isHeadless: true,
@@ -58,7 +57,7 @@ func (b *Browser) WithSlowMotion(duration time.Duration) {
 }
 
 func (b *Browser) Close() {
-	if b.isInit {
+	if atomic.LoadUint32(&b.isInit) == 1 {
 		b.browser.MustClose()
 		b.launcher.Cleanup()
 	}
@@ -90,14 +89,21 @@ func (b *Browser) Run(cb func(tab *Tab) (err error)) (err error) {
 		return
 	}
 
-	b.tab.launcher = b.launcher
-	b.tab.browser = b.browser
+	tab := &Tab{
+		launcher: b.launcher,
+		browser:  b.browser,
+	}
 
-	b.tab.page, b.tab.cancelFunc = stealth.MustPage(b.tab.browser).WithCancel()
+	tab.page, err = stealth.Page(tab.browser)
+	if err != nil {
+		return
+	}
 
-	b.isInit = true
+	tab.page, tab.cancelFunc = tab.page.WithCancel()
 
-	err = cb(b.tab)
+	atomic.StoreUint32(&b.isInit, 1)
+
+	err = cb(tab)
 	if err != nil {
 		return
 	}
