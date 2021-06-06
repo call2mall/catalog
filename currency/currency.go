@@ -83,7 +83,8 @@ func GetFactor(from, to string) (factor float64, err error) {
 
 	fromCurrency := fromIface.(Currency)
 
-	toIface, ok := currencies.Load(to)
+	var toIface interface{}
+	toIface, ok = currencies.Load(to)
 	if !ok {
 		err = fmt.Errorf("unexpected currency `to`: %s", from)
 
