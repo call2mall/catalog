@@ -81,11 +81,6 @@ func (b *Browser) Run(cb func(tab *Tab) (err error)) (err error) {
 			ControlURL(controlUrl).
 			Trace(b.withTrace)
 
-		b.browser, err = b.browser.Incognito()
-		if err != nil {
-			return
-		}
-
 		if b.slowMotionTime > 0 {
 			b.browser = b.browser.SlowMotion(b.slowMotionTime)
 		}
