@@ -10,10 +10,10 @@ import (
 )
 
 type Browser struct {
-	isInit   uint32
-	once     *sync.Once
-	launcher *launcher.Launcher
-	browser  *rod.Browser
+	isInit, isClosed uint32
+	once             *sync.Once
+	launcher         *launcher.Launcher
+	browser          *rod.Browser
 
 	isHeadless     bool
 	withDevTools   bool
@@ -57,9 +57,11 @@ func (b *Browser) WithSlowMotion(duration time.Duration) {
 }
 
 func (b *Browser) Close() {
-	if atomic.LoadUint32(&b.isInit) == 1 {
+	if atomic.LoadUint32(&b.isInit) == 1 && atomic.LoadUint32(&b.isClosed) == 0 {
 		b.browser.MustClose()
 		b.launcher.Cleanup()
+
+		atomic.StoreUint32(&b.isClosed, 1)
 	}
 }
 
@@ -78,6 +80,11 @@ func (b *Browser) Run(cb func(tab *Tab) (err error)) (err error) {
 		b.browser = rod.New().
 			ControlURL(controlUrl).
 			Trace(b.withTrace)
+
+		b.browser, err = b.browser.Incognito()
+		if err != nil {
+			return
+		}
 
 		if b.slowMotionTime > 0 {
 			b.browser = b.browser.SlowMotion(b.slowMotionTime)
