@@ -67,7 +67,17 @@ func (b *Browser) Close() {
 
 func (b *Browser) Run(cb func(tab *Tab) (err error)) (err error) {
 	b.once.Do(func() {
-		b.launcher = launcher.New().
+		browserPath, hasPath := launcher.LookPath()
+		if err != nil {
+			return
+		}
+
+		b.launcher = launcher.New()
+		if hasPath {
+			b.launcher.Bin(browserPath)
+		}
+
+		b.launcher.
 			Headless(b.isHeadless).
 			Devtools(b.withDevTools)
 

@@ -1,6 +1,5 @@
 .DS_Store
 .idea
-go.sum
 config.json
 proxies.csv
 log

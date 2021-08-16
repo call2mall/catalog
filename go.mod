@@ -11,7 +11,7 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20210305224431-50b9f457e822
 	github.com/chromedp/chromedp v0.6.8
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/go-rod/rod v0.99.0
+	github.com/go-rod/rod v0.101.0
 	github.com/go-rod/stealth v0.4.2
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/jhillyerd/enmime v0.8.4 // indirect
